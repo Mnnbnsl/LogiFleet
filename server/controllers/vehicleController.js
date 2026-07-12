@@ -1,124 +1,105 @@
 import * as vehicleService from "../services/vehicleService.js";
+import {
+  successResponse,
+  errorResponse,
+} from "../utils/response.js";
 
-// =============================
+// ==============================
 // CREATE VEHICLE
-// =============================
+// ==============================
 export const createVehicle = async (req, res) => {
   try {
     const vehicle = await vehicleService.createVehicle(req.body);
 
-    return res.status(201).json({
-      success: true,
-      data: {
+    return successResponse(
+      res,
+      {
         vehicle,
       },
-    });
+      201
+    );
   } catch (error) {
-    if (error.code === "CONFLICT") {
-      return res.status(409).json({
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
-    }
+    const statusMap = {
+      VALIDATION_ERROR: 400,
+      CONFLICT: 409,
+    };
 
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      error.code || "INTERNAL_SERVER_ERROR",
+      error.message,
+      statusMap[error.code] || 500
+    );
   }
 };
 
-// =============================
+// ==============================
 // GET ALL VEHICLES
-// =============================
+// ==============================
 export const getVehicles = async (req, res) => {
   try {
     const vehicles = await vehicleService.getVehicles(req.query);
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        vehicles,
-      },
+    return successResponse(res, {
+      vehicles,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      "INTERNAL_SERVER_ERROR",
+      error.message,
+      500
+    );
   }
 };
 
-// =============================
+// ==============================
 // GET AVAILABLE VEHICLES
-// =============================
+// ==============================
 export const getAvailableVehicles = async (req, res) => {
   try {
     const vehicles = await vehicleService.getAvailableVehicles();
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        vehicles,
-      },
+    return successResponse(res, {
+      vehicles,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      "INTERNAL_SERVER_ERROR",
+      error.message,
+      500
+    );
   }
 };
 
-// =============================
+// ==============================
 // GET VEHICLE BY ID
-// =============================
+// ==============================
 export const getVehicleById = async (req, res) => {
   try {
     const vehicle = await vehicleService.getVehicleById(req.params.id);
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        vehicle,
-      },
+    return successResponse(res, {
+      vehicle,
     });
   } catch (error) {
-    if (error.code === "NOT_FOUND") {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
-    }
+    const statusMap = {
+      NOT_FOUND: 404,
+    };
 
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      error.code || "INTERNAL_SERVER_ERROR",
+      error.message,
+      statusMap[error.code] || 500
+    );
   }
 };
 
-// =============================
+// ==============================
 // UPDATE VEHICLE
-// =============================
+// ==============================
 export const updateVehicle = async (req, res) => {
   try {
     const vehicle = await vehicleService.updateVehicle(
@@ -126,73 +107,47 @@ export const updateVehicle = async (req, res) => {
       req.body
     );
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        vehicle,
-      },
+    return successResponse(res, {
+      vehicle,
     });
   } catch (error) {
-    if (
-      error.code === "NOT_FOUND" ||
-      error.code === "CONFLICT" ||
-      error.code === "VALIDATION_ERROR"
-    ) {
-      const statusMap = {
-        NOT_FOUND: 404,
-        CONFLICT: 409,
-        VALIDATION_ERROR: 400,
-      };
+    const statusMap = {
+      NOT_FOUND: 404,
+      CONFLICT: 409,
+      VALIDATION_ERROR: 400,
+    };
 
-      return res.status(statusMap[error.code]).json({
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      error.code || "INTERNAL_SERVER_ERROR",
+      error.message,
+      statusMap[error.code] || 500
+    );
   }
 };
 
-// =============================
+// ==============================
 // DELETE VEHICLE (SOFT DELETE)
-// =============================
+// ==============================
 export const deleteVehicle = async (req, res) => {
   try {
-    const vehicle = await vehicleService.deleteVehicle(req.params.id);
+    const vehicle = await vehicleService.deleteVehicle(
+      req.params.id
+    );
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        vehicle,
-      },
+    return successResponse(res, {
+      vehicle,
     });
   } catch (error) {
-    if (error.code === "NOT_FOUND") {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-        },
-      });
-    }
+    const statusMap = {
+      NOT_FOUND: 404,
+    };
 
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: error.message,
-      },
-    });
+    return errorResponse(
+      res,
+      error.code || "INTERNAL_SERVER_ERROR",
+      error.message,
+      statusMap[error.code] || 500
+    );
   }
 };

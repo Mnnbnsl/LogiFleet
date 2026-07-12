@@ -1,43 +1,12 @@
 import prisma from "../lib/prisma.js";
 
-// =========================
+// ==============================
 // CREATE VEHICLE
-// =========================
+// ==============================
 export const createVehicle = async (data) => {
-  const {
-    regNumber,
-    name,
-    model,
-    type,
-    maxLoadCapacity,
-    acquisitionCost,
-    region,
-  } = data;
-
-    const requiredFields = [
-    "regNumber",
-    "name",
-    "model",
-    "type",
-    "maxLoadCapacity",
-    "acquisitionCost",
-    ];
-
-    for (const field of requiredFields) {
-    if (
-        data[field] === undefined ||
-        data[field] === null ||
-        data[field] === ""
-    ) {
-        const error = new Error(`${field} is required`);
-        error.code = "VALIDATION_ERROR";
-        throw error;
-    }
-    }
-  // Check duplicate registration number
   const existingVehicle = await prisma.vehicle.findUnique({
     where: {
-      regNumber,
+      regNumber: data.regNumber,
     },
   });
 
@@ -47,24 +16,14 @@ export const createVehicle = async (data) => {
     throw error;
   }
 
-  const vehicle = await prisma.vehicle.create({
-    data: {
-      regNumber,
-      name,
-      model,
-      type,
-      maxLoadCapacity,
-      acquisitionCost,
-      region,
-    },
+  return await prisma.vehicle.create({
+    data,
   });
-
-  return vehicle;
 };
 
-// =========================
+// ==============================
 // GET ALL VEHICLES
-// =========================
+// ==============================
 export const getVehicles = async (query) => {
   const { status, type, region, search } = query;
 
@@ -103,29 +62,27 @@ export const getVehicles = async (query) => {
         },
       },
       {
-         type: {
-         contains: search,
-         mode: "insensitive",
+        type: {
+          contains: search,
+          mode: "insensitive",
         },
-    },
+      },
     ];
   }
 
-  const vehicles = await prisma.vehicle.findMany({
+  return await prisma.vehicle.findMany({
     where,
     orderBy: {
       createdAt: "desc",
     },
   });
-
-  return vehicles;
 };
 
-// =========================
+// ==============================
 // GET AVAILABLE VEHICLES
-// =========================
+// ==============================
 export const getAvailableVehicles = async () => {
-  const vehicles = await prisma.vehicle.findMany({
+  return await prisma.vehicle.findMany({
     where: {
       status: "AVAILABLE",
     },
@@ -133,13 +90,11 @@ export const getAvailableVehicles = async () => {
       createdAt: "desc",
     },
   });
-
-  return vehicles;
 };
 
-// =========================
+// ==============================
 // GET VEHICLE BY ID
-// =========================
+// ==============================
 export const getVehicleById = async (id) => {
   const vehicle = await prisma.vehicle.findUnique({
     where: {
@@ -156,9 +111,9 @@ export const getVehicleById = async (id) => {
   return vehicle;
 };
 
-// =========================
+// ==============================
 // UPDATE VEHICLE
-// =========================
+// ==============================
 export const updateVehicle = async (id, data) => {
   const vehicle = await prisma.vehicle.findUnique({
     where: {
@@ -172,45 +127,35 @@ export const updateVehicle = async (id, data) => {
     throw error;
   }
 
-  // Prevent updating status to protected values
-  const blockedStatuses = ["ON_TRIP", "IN_SHOP", "RETIRED"];
-
-    if (data.status && blockedStatuses.includes(data.status)) {
-    const error = new Error(
-        "Vehicle status can only be changed through Trip or Maintenance."
-    );
-    error.code = "VALIDATION_ERROR";
-    throw error;
-    }
-
-  // Check duplicate regNumber
-  if (data.regNumber && data.regNumber !== vehicle.regNumber) {
-    const existing = await prisma.vehicle.findUnique({
+  // Duplicate Registration Number Check
+  if (
+    data.regNumber &&
+    data.regNumber !== vehicle.regNumber
+  ) {
+    const existingVehicle = await prisma.vehicle.findUnique({
       where: {
         regNumber: data.regNumber,
       },
     });
 
-    if (existing) {
+    if (existingVehicle) {
       const error = new Error("Registration number already exists");
       error.code = "CONFLICT";
       throw error;
     }
   }
 
-  const updatedVehicle = await prisma.vehicle.update({
+  return await prisma.vehicle.update({
     where: {
       id,
     },
     data,
   });
-
-  return updatedVehicle;
 };
 
-// =========================
-// SOFT DELETE
-// =========================
+// ==============================
+// SOFT DELETE VEHICLE
+// ==============================
 export const deleteVehicle = async (id) => {
   const vehicle = await prisma.vehicle.findUnique({
     where: {
@@ -224,7 +169,7 @@ export const deleteVehicle = async (id) => {
     throw error;
   }
 
-  const retiredVehicle = await prisma.vehicle.update({
+  return await prisma.vehicle.update({
     where: {
       id,
     },
@@ -232,6 +177,4 @@ export const deleteVehicle = async (id) => {
       status: "RETIRED",
     },
   });
-
-  return retiredVehicle;
 };

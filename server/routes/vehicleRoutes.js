@@ -12,44 +12,67 @@ import {
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/roleMiddleware.js";
 
+import {
+  validateBody,
+  validateQuery,
+} from "../middleware/validationMiddleware.js";
+
+import {
+  createVehicleSchema,
+  updateVehicleSchema,
+  vehicleQuerySchema,
+} from "../validators/vehicleValidator.js";
+
 const router = express.Router();
 
-// ==========================
-// GET ROUTES
-// ==========================
 
-router.get("/", protect, getVehicles);
+// GET /api/vehicles
+router.get(
+  "/",
+  protect,
+  validateQuery(vehicleQuerySchema),
+  getVehicles
+);
 
-router.get("/available", protect, getAvailableVehicles);
+// GET /api/vehicles/available
+router.get(
+  "/available",
+  protect,
+  getAvailableVehicles
+);
 
-router.get("/:id", protect, getVehicleById);
+// GET /api/vehicles/:id
+router.get(
+  "/:id",
+  protect,
+  getVehicleById
+);
 
-// ==========================
-// POST ROUTES
-// ==========================
 
+
+// POST /api/vehicles
 router.post(
   "/",
   protect,
   authorize("FLEET_MANAGER"),
+  validateBody(createVehicleSchema),
   createVehicle
 );
 
-// ==========================
-// PATCH ROUTES
-// ==========================
 
+
+// PATCH /api/vehicles/:id
 router.patch(
   "/:id",
   protect,
   authorize("FLEET_MANAGER"),
+  validateBody(updateVehicleSchema),
   updateVehicle
 );
 
-// ==========================
-// DELETE ROUTES
-// ==========================
 
+
+// DELETE /api/vehicles/:id
 router.delete(
   "/:id",
   protect,
