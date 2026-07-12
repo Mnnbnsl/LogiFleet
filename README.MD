@@ -244,3 +244,38 @@ LogiFleet/
 
 ```
 
+# 🌱 Future Enhancements
+
+* 📍 **Real-Time Telematics:** Live GPS integrations paired with custom geofencing alerts using the Google Maps API.
+* 🧠 **Predictive AI Maintenance:** Machine Learning workflows tracking vehicle analytics to catch asset degradation ahead of time.
+* 📲 **Driver Mobile Application:** Dedicated native companion apps featuring turn-by-turn routing and optical character recognition (OCR) camera captures for automated fuel receipt processing.
+* ⚡ **High-Speed Caching:** Layering Redis engines over high-read analytical paths to scale system responsiveness under high operational loads.
+
+---
+
+# 👥 Contributors
+
+| Contributor | Organizational Role Focus |
+| :--- | :--- |
+| **Jaspreet Kaur** | Data Architecture / API Engine Lead (BE1) |
+| **Manan Bansal** | Authentication / Validation Pipeline Engineer (BE2) |
+| **Simran Maurya** | State Management / Core View Architecture (FE1) |
+| **Maninder Saini** | Visualization UI / Responsive Design Engineer (FE2) |
+
+---
+
+# 📜 License
+
+This project is licensed under the terms of the open-source **MIT License**.
+
+---
+
+<div align="center">
+
+### 🚚 LogiFleet — Smart Fleet Infrastructure for Smarter Logistics Operations
+Built with ❤️ by the LogiFleet Open-Source Community. **If this boilerplate accelerates your workflow, consider giving the repository a star!** ⭐
+
+</div>
+
+
+
