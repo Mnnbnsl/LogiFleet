@@ -9,7 +9,7 @@ import fuelLogRoutes from "./routes/fuelLogRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
-
+import driverRoutes from "./routes/driverRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -25,6 +25,7 @@ app.use("/api/fuel-logs", fuelLogRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/drivers", driverRoutes);
 
 app.get("/", (req, res) => {
 

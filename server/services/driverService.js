@@ -1,42 +1,12 @@
 import prisma from "../lib/prisma.js";
 
-// =========================
+// ==============================
 // CREATE DRIVER
-// =========================
+// ==============================
 export const createDriver = async (data) => {
-  const {
-    name,
-    licenseNumber,
-    licenseCategory,
-    licenseExpiry,
-    contactNumber,
-  } = data;
-
-  // Required field validation
-  const requiredFields = [
-    "name",
-    "licenseNumber",
-    "licenseCategory",
-    "licenseExpiry",
-    "contactNumber",
-  ];
-
-  for (const field of requiredFields) {
-    if (
-      data[field] === undefined ||
-      data[field] === null ||
-      data[field] === ""
-    ) {
-      const error = new Error(`${field} is required`);
-      error.code = "VALIDATION_ERROR";
-      throw error;
-    }
-  }
-
-  // Duplicate license number
   const existingDriver = await prisma.driver.findUnique({
     where: {
-      licenseNumber,
+      licenseNumber: data.licenseNumber,
     },
   });
 
@@ -46,22 +16,14 @@ export const createDriver = async (data) => {
     throw error;
   }
 
-  const driver = await prisma.driver.create({
-    data: {
-      name,
-      licenseNumber,
-      licenseCategory,
-      licenseExpiry: new Date(licenseExpiry),
-      contactNumber,
-    },
+  return await prisma.driver.create({
+    data,
   });
-
-  return driver;
 };
 
-// =========================
+// ==============================
 // GET ALL DRIVERS
-// =========================
+// ==============================
 export const getDrivers = async (query) => {
   const { status, licenseCategory, search } = query;
 
@@ -98,21 +60,19 @@ export const getDrivers = async (query) => {
     ];
   }
 
-  const drivers = await prisma.driver.findMany({
+  return await prisma.driver.findMany({
     where,
     orderBy: {
       createdAt: "desc",
     },
   });
-
-  return drivers;
 };
 
-// =========================
+// ==============================
 // GET AVAILABLE DRIVERS
-// =========================
+// ==============================
 export const getAvailableDrivers = async () => {
-  const drivers = await prisma.driver.findMany({
+  return await prisma.driver.findMany({
     where: {
       status: "AVAILABLE",
       licenseExpiry: {
@@ -123,13 +83,11 @@ export const getAvailableDrivers = async () => {
       createdAt: "desc",
     },
   });
-
-  return drivers;
 };
 
-// =========================
+// ==============================
 // GET DRIVER BY ID
-// =========================
+// ==============================
 export const getDriverById = async (id) => {
   const driver = await prisma.driver.findUnique({
     where: {
@@ -146,10 +104,10 @@ export const getDriverById = async (id) => {
   return driver;
 };
 
-// =========================
+// ==============================
 // UPDATE DRIVER
-// =========================
-export const updateDriver = async (id, data, userRole) => {
+// ==============================
+export const updateDriver = async (id, data) => {
   const driver = await prisma.driver.findUnique({
     where: {
       id,
@@ -162,47 +120,28 @@ export const updateDriver = async (id, data, userRole) => {
     throw error;
   }
 
-  // Prevent duplicate license number
+  // Duplicate License Number Check
   if (
     data.licenseNumber &&
     data.licenseNumber !== driver.licenseNumber
   ) {
-    const existing = await prisma.driver.findUnique({
+    const existingDriver = await prisma.driver.findUnique({
       where: {
         licenseNumber: data.licenseNumber,
       },
     });
 
-    if (existing) {
+    if (existingDriver) {
       const error = new Error("License number already exists");
       error.code = "CONFLICT";
       throw error;
     }
   }
 
-  // Only Safety Officer can suspend drivers
-  if (
-    data.status === "SUSPENDED" &&
-    userRole !== "SAFETY_OFFICER"
-  ) {
-    const error = new Error(
-      "Only Safety Officer can suspend drivers"
-    );
-    error.code = "FORBIDDEN";
-    throw error;
-  }
-
-  const updatedDriver = await prisma.driver.update({
+  return await prisma.driver.update({
     where: {
       id,
     },
-    data: {
-      ...data,
-      ...(data.licenseExpiry && {
-        licenseExpiry: new Date(data.licenseExpiry),
-      }),
-    },
+    data,
   });
-
-  return updatedDriver;
 };
