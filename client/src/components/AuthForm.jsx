@@ -1,31 +1,47 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from "../api/axios";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sun, Moon, Code, User, Terminal } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sun, Moon, Code, User, Terminal, Briefcase } from 'lucide-react';
 
-export default function AuthForm({ isDarkMode, setIsDarkMode, isRegister, setIsRegister }) {
+export default function AuthForm({ 
+  isDarkMode: propIsDarkMode, 
+  setIsDarkMode: propSetIsDarkMode, 
+  isRegister: propIsRegister, 
+  setIsRegister: propSetIsRegister 
+}) {
+  const navigate = useNavigate();
+
+  // Local state fallbacks in case props are not passed by react-router-dom
+  const [localDarkMode, setLocalDarkMode] = useState(true);
+  const [localRegister, setLocalRegister] = useState(false);
+
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : localDarkMode;
+  const setIsDarkMode = propSetIsDarkMode || setLocalDarkMode;
+  const isRegister = propIsRegister !== undefined ? propIsRegister : localRegister;
+  const setIsRegister = propSetIsRegister || setLocalRegister;
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
+    role: "", // Required by backend
   });
 
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
   const mainIllustrationAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256";
   const formHeaderAvatar = "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150";
 
-
-const handleChange = (e) => {
+  const handleChange = (e) => {
     setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
+      ...formData,
+      [e.target.name]: e.target.value,
     });
-};
+  };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (loading) return;
@@ -34,47 +50,42 @@ const handleSubmit = async (e) => {
     setError("");
 
     try {
-        let response;
+      let response;
 
-        if (isRegister) {
+      if (isRegister) {
         response = await API.post("/auth/register", formData);
-        } else {
+      } else {
         response = await API.post("/auth/login", {
-            email: formData.email,
-            password: formData.password,
+          email: formData.email,
+          password: formData.password,
         });
-        }
+      }
 
-        if (!isRegister) {
-            localStorage.setItem("token", response.data.token);
-        }
+      if (!isRegister) {
+        localStorage.setItem("token", response.data.data.token);
+        alert("Login successful!");
+        navigate("/dashboard");
+      } else {
+        alert("Account created successfully! Please login.");
+        setIsRegister(false);
+      }
 
-        if (isRegister) {
-            alert("Account created successfully! Please login.");
-        } else {
-            alert("Login successful!");
-        }
-
-        setFormData({
-            fullName: "",
-            email: "",
-            password: "",
-        });
-
-        if (isRegister) {
-            setIsRegister(false);
-        }
-
-        console.log(response.data);
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        role: "",
+      });
 
     } catch (err) {
-        setError(
-        err.response?.data?.message || "Something went wrong"
-        );
+      setError(
+        err.response?.data?.error?.message || err.response?.data?.message || "Something went wrong"
+      );
+    } finally {
+      setLoading(false);
     }
+  };
 
-    finally{setLoading(false)};
-};
   return (
     <div className={`w-full max-w-6xl rounded-[24px] border overflow-hidden flex flex-col md:flex-row relative min-h-[680px] transition-all duration-300 ${
       isDarkMode 
@@ -123,8 +134,8 @@ const handleSubmit = async (e) => {
             <Code size={18} className="stroke-[2.5]" />
           </div>
           <div>
-            <h1 className={`text-lg font-bold tracking-wide leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>ODDO</h1>
-            <span className="text-[9px] font-bold tracking-[0.2em] text-blue-600 block mt-0.5">HACKATHON</span>
+            <h1 className={`text-lg font-bold tracking-wide leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>LogiFleet</h1>
+            <span className="text-[9px] font-bold tracking-[0.2em] text-blue-600 block mt-0.5">SMART OPERATIONS</span>
           </div>
         </div>
 
@@ -133,14 +144,14 @@ const handleSubmit = async (e) => {
           <h2 className={`text-3xl md:text-[38px] font-extrabold tracking-tight leading-[1.2] transition-colors duration-300 ${
             isDarkMode ? 'text-white' : 'text-slate-900'
           }`}>
-            Build ideas.<br />
-            Ship solutions.<br />
-            <span className="text-blue-600">Win together.</span>
+            Manage trips.<br />
+            Track expenses.<br />
+            <span className="text-blue-600">Optimize ROI.</span>
           </h2>
           <p className={`mt-4 text-sm md:text-base leading-relaxed font-normal transition-colors duration-300 ${
             isDarkMode ? 'text-slate-400' : 'text-slate-500'
           }`}>
-            Join thousands of innovators building impactful solutions at the Oddo Hackathon.
+            Join thousands of dispatch managers and drivers using LogiFleet to optimize vehicle operations.
           </p>
         </div>
 
@@ -151,7 +162,7 @@ const handleSubmit = async (e) => {
           <div className={`w-full max-w-[400px] rounded-xl border shadow-2xl overflow-hidden font-mono text-xs transition-colors duration-300 ${
             isDarkMode ? 'bg-[#0b0f19] border-slate-800' : 'bg-white border-slate-200'
           }`}>
-            {/* Window Window Header */}
+            {/* Window Header */}
             <div className={`px-4 py-3 flex items-center justify-between border-b transition-colors duration-300 ${
               isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-100/70 border-slate-200'
             }`}>
@@ -161,19 +172,18 @@ const handleSubmit = async (e) => {
                 <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
               </div>
               <div className={`text-[10px] flex items-center gap-1.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                <Terminal size={10} /> main.js
+                <Terminal size={10} /> config.json
               </div>
               <div className="w-10"></div>
             </div>
             
             {/* Window Content Display */}
             <div className="p-4 space-y-1 text-[11px] leading-relaxed">
-              <div className="text-slate-400 dark:text-slate-600">// Initialize application platform</div>
+              <div className="text-slate-400 dark:text-slate-600">// Initialize operations platform</div>
               <div>
-                <span className="text-purple-600 dark:text-purple-400">import</span>{' '}
-                <span className="text-blue-600 dark:text-blue-400">&#123; OddoApp &#125;</span>{' '}
-                <span className="text-purple-600 dark:text-purple-400">from</span>{' '}
-                <span className="text-emerald-600 dark:text-emerald-400">'@oddo/core'</span>;
+                <span className="text-purple-600 dark:text-purple-400">const</span>{' '}
+                <span className="text-blue-600 dark:text-blue-400">platform</span> ={' '}
+                <span className="text-emerald-600 dark:text-emerald-400">"LogiFleet"</span>;
               </div>
               <div className="pt-2">
                 <span className="text-blue-600 dark:text-blue-500">const</span>{' '}
@@ -186,7 +196,7 @@ const handleSubmit = async (e) => {
                 status: <span className="text-emerald-600 dark:text-emerald-400">'active_session'</span>,
               </div>
               <div className="pl-4">
-                version: <span className="text-amber-600 dark:text-amber-500">2026</span>
+                version: <span className="text-amber-600 dark:text-amber-500">1.0.0</span>
               </div>
               <div>&#125;;</div>
             </div>
@@ -198,8 +208,8 @@ const handleSubmit = async (e) => {
           }`}>
             <img src={mainIllustrationAvatar} className="w-8 h-8 rounded-full object-cover" alt="User Avatar" />
             <div>
-              <div className={`text-[10px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Norway</div>
-              <div className="text-[9px] font-medium text-blue-500">The Power Team</div>
+              <div className={`text-[10px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Admin</div>
+              <div className="text-[9px] font-medium text-blue-500">Logistics HQ</div>
             </div>
           </div>
 
@@ -212,7 +222,7 @@ const handleSubmit = async (e) => {
       }`}>
         <div className="w-full max-w-sm mx-auto">
           
-          {/* Header Profile Profile Icon Setup */}
+          {/* Header Icon Setup */}
           <div className="flex flex-col items-center mb-8">
             <div className={`w-16 h-16 rounded-full p-0.5 border flex items-center justify-center relative shadow-sm transition-colors duration-300 ${
               isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
@@ -246,28 +256,57 @@ const handleSubmit = async (e) => {
           {/* Form Processing Fields */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
-              <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 transition-colors duration-300 ${
-                  isDarkMode ? 'text-slate-500' : 'text-slate-400'
-                }`}>Full Name</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500">
-                    <User size={15} />
-                  </span>
-                  <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        placeholder="Enter Your Name"
-                        className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
+              <>
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                  }`}>Full Name</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500">
+                      <User size={15} />
+                    </span>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      placeholder="Enter Your Name"
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
                         isDarkMode
-                            ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
-                            : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
-                        }`}
+                          ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
+                          : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                      }`}
                     />
+                  </div>
                 </div>
-              </div>
+
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                  }`}>System Role</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500">
+                      <Briefcase size={15} />
+                    </span>
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
+                        isDarkMode
+                          ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
+                          : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                      }`}
+                    >
+                      <option value="" disabled>Select User Role</option>
+                      <option value="FLEET_MANAGER">Fleet Manager</option>
+                      <option value="DRIVER">Driver</option>
+                      <option value="SAFETY_OFFICER">Safety Officer</option>
+                      <option value="FINANCIAL_ANALYST">Financial Analyst</option>
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
 
             <div>
@@ -279,16 +318,16 @@ const handleSubmit = async (e) => {
                   <Mail size={15} />
                 </span>
                 <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="name@company.com"
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="name@company.com"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
                     isDarkMode
-                        ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
-                        : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
-                    }`}
+                      ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
+                      : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                  }`}
                 />
               </div>
             </div>
@@ -302,16 +341,16 @@ const handleSubmit = async (e) => {
                   <Lock size={15} />
                 </span>
                 <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    className={`w-full pl-10 pr-12 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
                     isDarkMode
-                        ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
-                        : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
-                    }`}
+                      ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
+                      : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                  }`}
                 />
                 <button 
                   type="button"
@@ -335,21 +374,22 @@ const handleSubmit = async (e) => {
                 <a href="#forgot" className="font-semibold text-blue-600 hover:underline transition-colors">Forgot password?</a>
               )}
             </div>
+            
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-2 text-sm">
-                    {error}
-                </div>
+              <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-2 text-sm">
+                {error}
+              </div>
             )}
 
             {/* Call To Action Buttons */}
             <button type="submit" disabled={loading} className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md group active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed" >
-                {loading ? "Please wait..." : isRegister ? "Create Account" : "Sign In"}
-                {!loading && (
-                    <ArrowRight
-                        size={14}
-                        className="transform group-hover:translate-x-0.5 transition-transform"
-                    />
-                )}
+              {loading ? "Please wait..." : isRegister ? "Create Account" : "Sign In"}
+              {!loading && (
+                <ArrowRight
+                  size={14}
+                  className="transform group-hover:translate-x-0.5 transition-transform"
+                />
+              )}
             </button>
           </form>
 
@@ -366,13 +406,15 @@ const handleSubmit = async (e) => {
           <p className={`text-center text-xs font-normal transition-colors duration-300 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
             {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button 
-              onClick={() => {setError("");
-                    setFormData({
-                        fullName: "",
-                        email: "",
-                        password: "",
-                    });
-                    setIsRegister(!isRegister);
+              onClick={() => {
+                setError("");
+                setFormData({
+                  fullName: "",
+                  email: "",
+                  password: "",
+                  role: "",
+                });
+                setIsRegister(!isRegister);
               }}
               className="font-bold text-blue-600 hover:underline ml-0.5 transition-colors"
             >
