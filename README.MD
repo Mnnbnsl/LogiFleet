@@ -244,6 +244,13 @@ LogiFleet/
 
 ```
 
+# ⚡ Performance Optimizations
+
+* **Server-Side Caching Layer:** Implemented custom caching mechanisms to eliminate repetitive database queries, drastically lowering API latency and reducing load on the database engine.
+* **Database Indexing Strategies:** Custom indexes applied across frequently filtered fields (`vehicleId`, `driverId`, `tripStatus`) to accelerate query execution speeds.
+* **Prisma Subquery Selectors:** Queries explicitly specify required datasets to avoid expensive `SELECT *` lookups and keep network payloads lightweight.
+* **Soft Delete Filters:** Global entity queries run through customized Prisma middleware filters that exclude soft-deleted records by default, keeping index scans highly efficient.
+
 # 🌱 Future Enhancements
 
 * 📍 **Real-Time Telematics:** Live GPS integrations paired with custom geofencing alerts using the Google Maps API.
