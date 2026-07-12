@@ -139,7 +139,7 @@ LogiFleet provides a centralized digital control platform that automates fleet o
 ### High-Level Architecture (HLD)
 
 <p align="center">
-  <img src="docs/images/system-architecture.png" width="900" alt="LogiFleet Enterprise System Architecture Diagram" />
+  <img src="docs/images/system-architecture.jpeg" width="900" alt="LogiFleet Enterprise System Architecture Diagram" />
 </p>
 
 `[React Frontend] ➔ (HTTPS REST API / JWT) ➔ [Express Route Handler] ➔ [Zod Validation Layer] ➔ [Service / Controller Domain] ➔ [Prisma Client] ➔ [PostgreSQL Engine]`
@@ -159,7 +159,7 @@ LogiFleet provides a centralized digital control platform that automates fleet o
 LogiFleet utilizes a highly relational PostgreSQL architecture, using the Prisma Client for type-safe execution.
 
 <p align="center">
-  <img src="docs/images/er-diagram.png" width="750" alt="LogiFleet Entity Relationship Diagram" />
+  <img src="docs/images/er-diagram.jpeg" width="750" alt="LogiFleet Entity Relationship Diagram" />
 </p>
 
 ### Prisma Schema Definition Overview
@@ -264,10 +264,10 @@ LogiFleet/
 
 | Contributor | Organizational Role Focus |
 | :--- | :--- |
-| **Jaspreet Kaur** | Data Architecture / API Engine Lead (BE1) |
-| **Manan Bansal** | Authentication / Validation Pipeline Engineer (BE2) |
-| **Simran Maurya** | State Management / Core View Architecture (FE1) |
-| **Maninder Saini** | Visualization UI / Responsive Design Engineer (FE2) |
+| **Jaspreet Kaur** | Data Architecture / API Engine Lead |
+| **Manan Bansal** | Authentication / Validation Pipeline Engineer  |
+| **Simran Maurya** | State Management / Core View Architecture |
+| **Maninder Saini** | Visualization UI / Responsive Design Engineer  |
 
 ---
 
