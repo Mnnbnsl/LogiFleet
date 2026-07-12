@@ -1,38 +1,24 @@
 import jwt from "jsonwebtoken";
+import { errorResponse } from "../utils/response.js";
 
 export const protect = async (req, res, next) => {
-
   try {
-
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-
+      return errorResponse(res, "UNAUTHORIZED", "Missing or invalid authorization header", 401);
     }
 
     const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    req.user = decoded;
+    req.user = {
+      id: decoded.sub || decoded.id,
+      role: decoded.role,
+    };
 
     next();
-
   } catch (error) {
-
-    return res.status(401).json({
-      success: false,
-      message: "Invalid Token",
-    });
-
+    return errorResponse(res, "UNAUTHORIZED", "Invalid or expired token", 401);
   }
-
 };

@@ -1,44 +1,47 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma.js";
+import { successResponse, errorResponse } from "../utils/response.js";
 
 export const register = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { name, fullName, email, password, role } = req.body;
 
-    if (!fullName || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
+    const finalName = name || fullName;
+
+    if (!finalName || !email || !password || !role) {
+      return errorResponse(res, "VALIDATION_ERROR", "Name, email, password, and role are required", 400);
+    }
+
+    // Validate role value
+    const validRoles = ["FLEET_MANAGER", "DRIVER", "SAFETY_OFFICER", "FINANCIAL_ANALYST"];
+    if (!validRoles.includes(role)) {
+      return errorResponse(res, "VALIDATION_ERROR", "Invalid role specified", 400);
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "User already exists",
-      });
+      return errorResponse(res, "CONFLICT", "User already exists", 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
-        fullName,
+        name: finalName,
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
+        role,
       },
     });
 
     const token = jwt.sign(
       {
-        id: user.id,
+        sub: user.id,
+        role: user.role,
       },
       process.env.JWT_SECRET,
       {
@@ -46,68 +49,47 @@ export const register = async (req, res) => {
       }
     );
 
-    return res.status(201).json({
-      success: true,
-      message: "Registration successful",
+    return successResponse(res, {
       token,
       user: {
         id: user.id,
-        fullName: user.fullName,
+        name: user.name,
         email: user.email,
+        role: user.role,
       },
-    });
+    }, 201);
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    console.error("Register Error:", error);
+    return errorResponse(res, "INTERNAL_SERVER_ERROR", "Internal Server Error", 500);
   }
 };
-
-
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and Password are required",
-      });
+      return errorResponse(res, "VALIDATION_ERROR", "Email and Password are required", 400);
     }
 
-
     const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return errorResponse(res, "NOT_FOUND", "User not found", 404);
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid Credentials",
-      });
+      return errorResponse(res, "UNAUTHORIZED", "Invalid Credentials", 401);
     }
 
     const token = jwt.sign(
       {
-        id: user.id,
+        sub: user.id,
+        role: user.role,
       },
       process.env.JWT_SECRET,
       {
@@ -115,62 +97,43 @@ export const login = async (req, res) => {
       }
     );
 
-    return res.status(200).json({
-      success: true,
-      message: "Login Successful",
+    return successResponse(res, {
       token,
       user: {
         id: user.id,
-        fullName: user.fullName,
+        name: user.name,
         email: user.email,
+        role: user.role,
       },
-    });
+    }, 200);
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    console.error("Login Error:", error);
+    return errorResponse(res, "INTERNAL_SERVER_ERROR", "Internal Server Error", 500);
   }
 };
 
-
 export const getProfile = async (req, res) => {
   try {
-
     const user = await prisma.user.findUnique({
       where: {
         id: req.user.id,
       },
       select: {
         id: true,
-        fullName: true,
+        name: true,
         email: true,
+        role: true,
         createdAt: true,
       },
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return errorResponse(res, "NOT_FOUND", "User not found", 404);
     }
 
-    return res.status(200).json({
-      success: true,
-      user,
-    });
-
+    return successResponse(res, { user }, 200);
   } catch (error) {
-
-    console.log(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
-
+    console.error("GetProfile Error:", error);
+    return errorResponse(res, "INTERNAL_SERVER_ERROR", "Internal Server Error", 500);
   }
 };
