@@ -35,7 +35,6 @@ const ROLE_REDIRECTS = {
   FINANCIAL_ANALYST: "/finance/dashboard",
 };
 
-export default function AuthForm({ isDarkMode, setIsDarkMode, isRegister, setIsRegister }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -272,7 +271,34 @@ export default function AuthForm({ isDarkMode, setIsDarkMode, isRegister, setIsR
                     }`}
                   />
                 </div>
-              </div>
+
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                  }`}>System Role</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500">
+                      <Briefcase size={15} />
+                    </span>
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all ${
+                        isDarkMode
+                          ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-600"
+                          : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                      }`}
+                    >
+                      <option value="" disabled>Select User Role</option>
+                      <option value="FLEET_MANAGER">Fleet Manager</option>
+                      <option value="DRIVER">Driver</option>
+                      <option value="SAFETY_OFFICER">Safety Officer</option>
+                      <option value="FINANCIAL_ANALYST">Financial Analyst</option>
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
 
             <RoleSelect value={formData.role} onChange={handleRoleChange} isDarkMode={isDarkMode} />
