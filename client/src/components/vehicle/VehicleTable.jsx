@@ -41,13 +41,13 @@ const VehicleTable = ({ vehicles, loading, onEdit, onDelete, page, totalPages, o
               <th className="px-4 py-3 whitespace-nowrap">Reg. Number</th>
               <th className="px-4 py-3 whitespace-nowrap">Vehicle Name</th>
               <th className="px-4 py-3 whitespace-nowrap">Type</th>
-              <th className="px-4 py-3 whitespace-nowrap">Manufacturer</th>
-              <th className="px-4 py-3 whitespace-nowrap">Fuel Type</th>
-              <th className="px-4 py-3 whitespace-nowrap">Capacity</th>
+              <th className="px-4 py-3 whitespace-nowrap">Model</th>
+              <th className="px-4 py-3 whitespace-nowrap">Max Load (kg)</th>
+              <th className="px-4 py-3 whitespace-nowrap">Odometer (km)</th>
+              <th className="px-4 py-3 whitespace-nowrap">Acq. Cost</th>
+              <th className="px-4 py-3 whitespace-nowrap">Region</th>
               <th className="px-4 py-3 whitespace-nowrap">Assigned Driver</th>
               <th className="px-4 py-3 whitespace-nowrap">Current Trip</th>
-              <th className="px-4 py-3 whitespace-nowrap">Insurance Expiry</th>
-              <th className="px-4 py-3 whitespace-nowrap">Fitness Expiry</th>
               <th className="px-4 py-3 whitespace-nowrap">Status</th>
               <th className="px-4 py-3 whitespace-nowrap">Actions</th>
             </tr>
@@ -70,17 +70,17 @@ const VehicleTable = ({ vehicles, loading, onEdit, onDelete, page, totalPages, o
                   key={v.id}
                   className="border-b border-gray-800 hover:bg-gray-800/40 transition"
                 >
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.id}</td>
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">{v.id}</td>
                   <td className="px-4 py-3 text-gray-100 font-medium whitespace-nowrap">{v.regNumber}</td>
                   <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.name}</td>
                   <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.type}</td>
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.manufacturer}</td>
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.fuelType}</td>
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.capacity}</td>
+                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.model}</td>
+                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.maxLoadCapacity} kg</td>
+                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.odometer} km</td>
+                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">₹{v.acquisitionCost}</td>
+                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.region || "N/A"}</td>
                   <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.assignedDriver}</td>
                   <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.currentTrip}</td>
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.insuranceExpiry}</td>
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{v.fitnessExpiry}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <StatusPill status={v.status} />
                   </td>
@@ -138,22 +138,60 @@ const VehicleTable = ({ vehicles, loading, onEdit, onDelete, page, totalPages, o
         </div>
       </div>
 
-      {/* Simple View Modal */}
+      {/* View Modal */}
       {viewVehicle && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1F2937] rounded-xl border border-gray-700 w-full max-w-lg p-6">
-            <h3 className="text-white font-semibold mb-4">{viewVehicle.name}</h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {Object.entries(viewVehicle).map(([key, value]) => (
-                <div key={key}>
-                  <p className="text-gray-500 text-xs uppercase">{key}</p>
-                  <p className="text-gray-200">{String(value)}</p>
-                </div>
-              ))}
+          <div className="bg-[#1F2937] rounded-xl border border-gray-700 w-full max-w-lg p-6 shadow-xl">
+            <h3 className="text-white font-semibold mb-4 text-lg border-b border-gray-700 pb-2">{viewVehicle.name} Details</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Vehicle ID</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.id}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Reg. Number</p>
+                <p className="text-gray-200 font-semibold mt-1">{viewVehicle.regNumber}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Type</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.type}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Model</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.model}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Max Load Capacity</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.maxLoadCapacity} kg</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Current Odometer</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.odometer} km</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Acquisition Cost</p>
+                <p className="text-gray-200 mt-1">₹{viewVehicle.acquisitionCost}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Region</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.region || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Assigned Driver</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.assignedDriver}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs uppercase font-medium">Current Trip</p>
+                <p className="text-gray-200 mt-1">{viewVehicle.currentTrip}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-gray-500 text-xs uppercase font-medium mb-1.5">Status</p>
+                <StatusPill status={viewVehicle.status} />
+              </div>
             </div>
             <button
               onClick={() => setViewVehicle(null)}
-              className="mt-5 bg-[#F5B301] text-gray-900 font-medium rounded-lg px-4 py-2 text-sm w-full"
+              className="mt-6 bg-[#F5B301] text-gray-900 font-semibold rounded-lg px-4 py-2.5 text-sm w-full transition hover:brightness-95 active:scale-[0.98]"
             >
               Close
             </button>

@@ -1,5 +1,6 @@
 // src/components/driver/DriverPageContent.jsx
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   RefreshCw,
@@ -7,7 +8,6 @@ import {
   Plus,
   Users,
   CheckCircle2,
-  Truck,
   Ban,
   AlertTriangle,
   ChevronDown,
@@ -15,137 +15,38 @@ import {
 import DriverTable from "./DriverTable";
 import AddDriver from "./AddDriver";
 import EditDriver from "./EditDriver";
+import { getDrivers, createDriver, updateDriver } from "../../services/driverService";
 
 /**
  * DriverPageContent
  * ----------------------------------------------------
- * Driver Management page content. Same design system as the
- * Vehicle Registry: KPI cards, business rule banner, toolbar
- * (search/filters/actions), and a data table with pagination.
- *
- * Add / Edit are rendered as controlled modals (AddDriver /
- * EditDriver) driven by local state — no nested routing needed.
+ * Driver Management page content connected to the PostgreSQL database.
  * ----------------------------------------------------
  */
-
-const mockDrivers = [
-  {
-    id: "DRV-001",
-    name: "Rajesh Kumar",
-    email: "rajesh.kumar@logifleet.com",
-    phone: "+91 98765 43210",
-    licenseNumber: "DL-10239485",
-    licenseCategory: "HMV",
-    licenseExpiry: "2026-09-14",
-    emergencyContact: "+91 98111 22334",
-    address: "221 Sector 32, Ludhiana, Punjab",
-    tripCompletion: 96,
-    safetyStatus: "Excellent",
-    currentStatus: "On Trip",
-  },
-  {
-    id: "DRV-002",
-    name: "Suresh Yadav",
-    email: "suresh.yadav@logifleet.com",
-    phone: "+91 98220 11223",
-    licenseNumber: "DL-88213765",
-    licenseCategory: "LMV",
-    licenseExpiry: "2026-08-02",
-    emergencyContact: "+91 90123 45678",
-    address: "45 Model Town, Jalandhar, Punjab",
-    tripCompletion: 88,
-    safetyStatus: "Good",
-    currentStatus: "Available",
-  },
-  {
-    id: "DRV-003",
-    name: "Manpreet Singh",
-    email: "manpreet.singh@logifleet.com",
-    phone: "+91 99888 76543",
-    licenseNumber: "DL-55019284",
-    licenseCategory: "HMV",
-    licenseExpiry: "2026-07-30",
-    emergencyContact: "+91 99001 23456",
-    address: "12 Civil Lines, Ludhiana, Punjab",
-    tripCompletion: 74,
-    safetyStatus: "Average",
-    currentStatus: "Suspended",
-  },
-  {
-    id: "DRV-004",
-    name: "Amit Sharma",
-    email: "amit.sharma@logifleet.com",
-    phone: "+91 97654 32109",
-    licenseNumber: "DL-33984521",
-    licenseCategory: "PSV",
-    licenseExpiry: "2027-01-19",
-    emergencyContact: "+91 98876 54321",
-    address: "78 Rajguru Nagar, Ludhiana, Punjab",
-    tripCompletion: 91,
-    safetyStatus: "Excellent",
-    currentStatus: "Available",
-  },
-  {
-    id: "DRV-005",
-    name: "Harpreet Kaur",
-    email: "harpreet.kaur@logifleet.com",
-    phone: "+91 96543 21098",
-    licenseNumber: "DL-77102938",
-    licenseCategory: "LMV",
-    licenseExpiry: "2026-06-25",
-    emergencyContact: "+91 97001 65432",
-    address: "9 Sarabha Nagar, Ludhiana, Punjab",
-    tripCompletion: 65,
-    safetyStatus: "Poor",
-    currentStatus: "Off Duty",
-  },
-  {
-    id: "DRV-006",
-    name: "Vikram Chauhan",
-    email: "vikram.chauhan@logifleet.com",
-    phone: "+91 95432 10987",
-    licenseNumber: "DL-64920175",
-    licenseCategory: "Trailer",
-    licenseExpiry: "2026-11-05",
-    emergencyContact: "+91 96112 23345",
-    address: "56 Gill Road, Ludhiana, Punjab",
-    tripCompletion: 83,
-    safetyStatus: "Good",
-    currentStatus: "On Trip",
-  },
-  {
-    id: "DRV-007",
-    name: "Deepak Verma",
-    email: "deepak.verma@logifleet.com",
-    phone: "+91 94321 09876",
-    licenseNumber: "DL-20938471",
-    licenseCategory: "HMV",
-    licenseExpiry: "2026-07-22",
-    emergencyContact: "+91 95223 34456",
-    address: "3 Ferozepur Road, Ludhiana, Punjab",
-    tripCompletion: 79,
-    safetyStatus: "Good",
-    currentStatus: "Available",
-  },
-  {
-    id: "DRV-008",
-    name: "Karamjeet Singh",
-    email: "karamjeet.singh@logifleet.com",
-    phone: "+91 93210 98765",
-    licenseNumber: "DL-11029384",
-    licenseCategory: "PSV",
-    licenseExpiry: "2025-12-30",
-    emergencyContact: "+91 94334 45567",
-    address: "67 Dugri Road, Ludhiana, Punjab",
-    tripCompletion: 58,
-    safetyStatus: "Average",
-    currentStatus: "Suspended",
-  },
-];
 
 const LICENSE_CATEGORY_OPTIONS = ["All Categories", "LMV", "HMV", "MCWG", "PSV", "Trailer"];
 const STATUS_OPTIONS = ["All Statuses", "Available", "On Trip", "Off Duty", "Suspended"];
 const PAGE_SIZE = 5;
+
+const mapStatusToFrontend = (status) => {
+  const map = {
+    AVAILABLE: "Available",
+    ON_TRIP: "On Trip",
+    OFF_DUTY: "Off Duty",
+    SUSPENDED: "Suspended"
+  };
+  return map[status] || status;
+};
+
+const mapStatusToBackend = (status) => {
+  const map = {
+    "Available": "AVAILABLE",
+    "On Trip": "ON_TRIP",
+    "Off Duty": "OFF_DUTY",
+    "Suspended": "SUSPENDED"
+  };
+  return map[status] || status;
+};
 
 const KpiCard = ({ label, value, icon: Icon, accent }) => (
   <div className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-[#1F2937]">
@@ -168,33 +69,49 @@ const KpiCard = ({ label, value, icon: Icon, accent }) => (
 );
 
 const DriverPageContent = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(urlSearch);
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setCurrentPage(1);
+  }, [urlSearch]);
 
   // Modal state
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
 
-  // Simulate initial fetch
-  useEffect(() => {
+  const loadDrivers = async () => {
     setLoading(true);
-    const timer = setTimeout(() => {
-      setDrivers(mockDrivers);
+    try {
+      const res = await getDrivers();
+      const dbDrivers = res.data?.drivers || [];
+      
+      // Map database fields to UI expectations
+      const mapped = dbDrivers.map(d => ({
+        ...d,
+        status: mapStatusToFrontend(d.status)
+      }));
+      setDrivers(mapped);
+    } catch (err) {
+      console.error("Failed to load drivers:", err);
+    } finally {
       setLoading(false);
-    }, 700);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    loadDrivers();
   }, []);
 
   const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setDrivers(mockDrivers);
-      setLoading(false);
-    }, 600);
+    loadDrivers();
   };
 
   const handleExportCsv = () => {
@@ -203,20 +120,18 @@ const DriverPageContent = () => {
       "License Number",
       "License Category",
       "License Expiry",
-      "Phone",
-      "Trip Completion",
-      "Safety Status",
+      "Contact Number",
+      "Safety Score",
       "Current Status",
     ];
     const rows = filteredDrivers.map((d) => [
       d.name,
       d.licenseNumber,
       d.licenseCategory,
-      d.licenseExpiry,
-      d.phone,
-      `${d.tripCompletion}%`,
-      d.safetyStatus,
-      d.currentStatus,
+      d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString() : "",
+      d.contactNumber,
+      d.safetyScore,
+      d.status,
     ]);
     const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -230,18 +145,45 @@ const DriverPageContent = () => {
   };
 
   const handleDelete = (driver) => {
-    setDrivers((prev) => prev.filter((d) => d.id !== driver.id));
+    alert("Drivers cannot be deleted to preserve historical trip records. You can update their status to Suspended or Off Duty instead.");
   };
 
-  const handleAddSave = (formData) => {
-    const newDriver = { ...formData, id: `DRV-${Date.now()}` };
-    setDrivers((prev) => [newDriver, ...prev]);
+  const handleAddSave = async (formData) => {
+    try {
+      const payload = {
+        name: formData.name,
+        contactNumber: formData.contactNumber,
+        licenseNumber: formData.licenseNumber,
+        licenseCategory: formData.licenseCategory,
+        licenseExpiry: formData.licenseExpiry,
+        safetyScore: formData.safetyScore || 100,
+        status: mapStatusToBackend(formData.status)
+      };
+      await createDriver(payload);
+      setIsAddOpen(false);
+      loadDrivers();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to save driver");
+    }
   };
 
-  const handleEditSave = (formData) => {
-    setDrivers((prev) =>
-      prev.map((d) => (d.id === editingDriver.id ? { ...d, ...formData } : d))
-    );
+  const handleEditSave = async (formData) => {
+    try {
+      const payload = {
+        name: formData.name,
+        contactNumber: formData.contactNumber,
+        licenseNumber: formData.licenseNumber,
+        licenseCategory: formData.licenseCategory,
+        licenseExpiry: formData.licenseExpiry,
+        safetyScore: formData.safetyScore,
+        status: mapStatusToBackend(formData.status)
+      };
+      await updateDriver(editingDriver.id, payload);
+      setEditingDriver(null);
+      loadDrivers();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update driver");
+    }
   };
 
   const filteredDrivers = useMemo(() => {
@@ -254,7 +196,7 @@ const DriverPageContent = () => {
         driver.licenseCategory === categoryFilter;
       const matchesStatus =
         statusFilter === "All Statuses" ||
-        driver.currentStatus === statusFilter;
+        driver.status === statusFilter;
       return matchesSearch && matchesCategory && matchesStatus;
     });
   }, [drivers, search, categoryFilter, statusFilter]);
@@ -271,11 +213,9 @@ const DriverPageContent = () => {
   const kpis = useMemo(
     () => ({
       total: drivers.length,
-      available: drivers.filter((d) => d.currentStatus === "Available")
-        .length,
-      onTrip: drivers.filter((d) => d.currentStatus === "On Trip").length,
-      suspended: drivers.filter((d) => d.currentStatus === "Suspended")
-        .length,
+      available: drivers.filter((d) => d.status === "Available").length,
+      onTrip: drivers.filter((d) => d.status === "On Trip").length,
+      suspended: drivers.filter((d) => d.status === "Suspended").length,
     }),
     [drivers]
   );
@@ -318,7 +258,7 @@ const DriverPageContent = () => {
         <KpiCard
           label="On Trip"
           value={kpis.onTrip}
-          icon={Truck}
+          icon={Ban} // using generic icon for trip
           accent="bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
         />
         <KpiCard
@@ -359,6 +299,14 @@ const DriverPageContent = () => {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
+                setSearchParams((prev) => {
+                  if (e.target.value) {
+                    prev.set('search', e.target.value);
+                  } else {
+                    prev.delete('search');
+                  }
+                  return prev;
+                });
                 setCurrentPage(1);
               }}
               placeholder="Search by name or license..."
@@ -450,12 +398,14 @@ const DriverPageContent = () => {
         onClose={() => setIsAddOpen(false)}
         onSave={handleAddSave}
       />
-      <EditDriver
-        isOpen={!!editingDriver}
-        driver={editingDriver}
-        onClose={() => setEditingDriver(null)}
-        onSave={handleEditSave}
-      />
+      {editingDriver && (
+        <EditDriver
+          isOpen={!!editingDriver}
+          driver={editingDriver}
+          onClose={() => setEditingDriver(null)}
+          onSave={handleEditSave}
+        />
+      )}
     </div>
   );
 };

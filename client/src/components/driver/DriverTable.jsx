@@ -1,4 +1,5 @@
 // src/components/driver/DriverTable.jsx
+import { useState } from "react";
 import {
   CircleUserRound,
   Eye,
@@ -13,26 +14,9 @@ import {
  * DriverTable
  * ----------------------------------------------------
  * Presentational table for the Driver Registry.
- * Mirrors the Vehicle Registry table: sticky header, hover rows,
- * loading skeleton, empty state, pagination, horizontal scroll on mobile.
- *
- * Props
- *  - drivers: array of driver records (already filtered + paginated slice)
- *  - loading: boolean
- *  - onView / onEdit / onDelete: (driver) => void
- *  - currentPage, totalPages, totalItems, pageSize
- *  - onPageChange: (page) => void
+ * Aligned with DB schema.
  * ----------------------------------------------------
  */
-
-const SAFETY_STYLES = {
-  Excellent:
-    "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-  Good: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-  Average:
-    "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-  Poor: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
-};
 
 const STATUS_STYLES = {
   Available:
@@ -44,13 +28,12 @@ const STATUS_STYLES = {
 };
 
 const TABLE_COLUMNS = [
-  "Driver",
+  "Driver Name",
   "License Number",
   "License Category",
   "License Expiry",
-  "Phone Number",
-  "Trip Completion",
-  "Safety Status",
+  "Contact Number",
+  "Safety Score",
   "Current Status",
   "Actions",
 ];
@@ -77,6 +60,7 @@ const SkeletonRow = () => (
 );
 
 const isExpiringSoon = (dateStr) => {
+  if (!dateStr) return false;
   const expiry = new Date(dateStr);
   const now = new Date();
   const diffDays = (expiry - now) / (1000 * 60 * 60 * 24);
@@ -95,6 +79,7 @@ const DriverTable = ({
   pageSize = 8,
   onPageChange,
 }) => {
+  const [viewDriver, setViewDriver] = useState(null);
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
@@ -102,7 +87,7 @@ const DriverTable = ({
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-800 dark:bg-[#1F2937]">
       {/* Scrollable table wrapper */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
           <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/60">
             <tr>
               {TABLE_COLUMNS.map((col) => (
@@ -146,20 +131,15 @@ const DriverTable = ({
                   key={driver.id}
                   className="border-b border-gray-100 transition-colors duration-150 last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40"
                 >
-                  {/* Driver */}
+                  {/* Driver Name */}
                   <td className="whitespace-nowrap px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-50 text-yellow-600 dark:bg-yellow-400/10 dark:text-yellow-300">
                         <CircleUserRound size={20} />
                       </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {driver.name}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {driver.email}
-                        </span>
-                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {driver.name}
+                      </span>
                     </div>
                   </td>
 
@@ -182,45 +162,30 @@ const DriverTable = ({
                           : "text-gray-600 dark:text-gray-400"
                       }
                     >
-                      {driver.licenseExpiry}
+                      {driver.licenseExpiry ? new Date(driver.licenseExpiry).toLocaleDateString() : ""}
                     </span>
                   </td>
 
-                  {/* Phone Number */}
+                  {/* Contact Number */}
                   <td className="whitespace-nowrap px-4 py-3.5 text-gray-600 dark:text-gray-400">
-                    {driver.phone}
+                    {driver.contactNumber}
                   </td>
 
-                  {/* Trip Completion % */}
-                  <td className="whitespace-nowrap px-4 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                        <div
-                          className="h-full rounded-full bg-yellow-400 transition-all duration-500"
-                          style={{ width: `${driver.tripCompletion}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {driver.tripCompletion}%
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Safety Status */}
-                  <td className="whitespace-nowrap px-4 py-3.5">
-                    <Badge label={driver.safetyStatus} styles={SAFETY_STYLES} />
+                  {/* Safety Score */}
+                  <td className="whitespace-nowrap px-4 py-3.5 font-semibold text-gray-700 dark:text-gray-300">
+                    {driver.safetyScore} / 100
                   </td>
 
                   {/* Current Status */}
                   <td className="whitespace-nowrap px-4 py-3.5">
-                    <Badge label={driver.currentStatus} styles={STATUS_STYLES} />
+                    <Badge label={driver.status} styles={STATUS_STYLES} />
                   </td>
 
                   {/* Actions */}
                   <td className="whitespace-nowrap px-4 py-3.5">
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => onView?.(driver)}
+                        onClick={() => setViewDriver(driver)}
                         title="View driver"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                       >
@@ -249,51 +214,74 @@ const DriverTable = ({
       </div>
 
       {/* Pagination */}
-      {!loading && totalItems > 0 && (
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 px-4 py-3.5 dark:border-gray-800 sm:flex-row">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Showing{" "}
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {startItem}-{endItem}
-            </span>{" "}
-            of{" "}
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {totalItems}
-            </span>{" "}
-            drivers
-          </p>
+      <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          Showing <span className="font-semibold text-gray-700 dark:text-gray-300">{startItem}</span> to{" "}
+          <span className="font-semibold text-gray-700 dark:text-gray-300">{endItem}</span> of{" "}
+          <span className="font-semibold text-gray-700 dark:text-gray-300">{totalItems}</span> drivers
+        </p>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-all duration-200 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-all duration-200 hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-1.5">
+      {/* Simple View Modal */}
+      {viewDriver && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#1F2937] rounded-xl border border-gray-200 dark:border-gray-700 w-full max-w-lg p-6 shadow-xl">
+            <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg border-b pb-2">Driver Details</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">Driver Name</p>
+                <p className="text-gray-900 dark:text-white font-semibold mt-1">{viewDriver.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">License Number</p>
+                <p className="text-gray-900 dark:text-white mt-1">{viewDriver.licenseNumber}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">License Category</p>
+                <p className="text-gray-900 dark:text-white mt-1">{viewDriver.licenseCategory}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">License Expiry</p>
+                <p className="text-gray-900 dark:text-white mt-1">
+                  {viewDriver.licenseExpiry ? new Date(viewDriver.licenseExpiry).toLocaleDateString() : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">Contact Number</p>
+                <p className="text-gray-900 dark:text-white mt-1">{viewDriver.contactNumber}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase font-medium">Safety Score</p>
+                <p className="text-gray-900 dark:text-white mt-1">{viewDriver.safetyScore} / 100</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-gray-400 text-xs uppercase font-medium">Status</p>
+                <div className="mt-1">
+                  <Badge label={viewDriver.status} styles={STATUS_STYLES} />
+                </div>
+              </div>
+            </div>
             <button
-              onClick={() => onPageChange?.(Math.max(currentPage - 1, 1))}
-              disabled={currentPage === 1}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700"
+              onClick={() => setViewDriver(null)}
+              className="mt-6 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-semibold rounded-lg px-4 py-2.5 text-sm w-full transition active:scale-[0.98]"
             >
-              <ChevronLeft size={16} />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => onPageChange?.(page)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors duration-150 ${
-                  page === currentPage
-                    ? "bg-yellow-400 text-gray-900"
-                    : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() =>
-                onPageChange?.(Math.min(currentPage + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700"
-            >
-              <ChevronRight size={16} />
+              Close
             </button>
           </div>
         </div>

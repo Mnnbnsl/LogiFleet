@@ -72,6 +72,16 @@ export const getVehicles = async (query) => {
 
   return await prisma.vehicle.findMany({
     where,
+    include: {
+      trips: {
+        where: {
+          status: "DISPATCHED",
+        },
+        include: {
+          driver: true,
+        },
+      },
+    },
     orderBy: {
       createdAt: "desc",
     },

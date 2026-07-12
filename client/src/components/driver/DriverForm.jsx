@@ -3,11 +3,8 @@ import { useState } from "react";
 import {
   User,
   Phone,
-  Mail,
   IdCard,
   Calendar,
-  ShieldAlert,
-  MapPin,
   ShieldCheck,
   Activity,
 } from "lucide-react";
@@ -16,31 +13,21 @@ import {
  * DriverForm
  * ----------------------------------------------------
  * Shared, reusable form for Add Driver / Edit Driver.
- * Validation UI only — no network calls.
- *
- * Props
- *  - initialData: partial driver object to prefill (edit mode)
- *  - onSubmit: (formData) => void
- *  - onCancel: () => void
- *  - submitLabel: string
+ * Prefills initialData, validates inputs, and submits database-aligned fields.
  * ----------------------------------------------------
  */
 
 const LICENSE_CATEGORIES = ["LMV", "HMV", "MCWG", "PSV", "Trailer"];
-const SAFETY_STATUSES = ["Excellent", "Good", "Average", "Poor"];
 const CURRENT_STATUSES = ["Available", "On Trip", "Off Duty", "Suspended"];
 
 const emptyDriver = {
   name: "",
-  phone: "",
-  email: "",
+  contactNumber: "",
   licenseNumber: "",
   licenseCategory: LICENSE_CATEGORIES[0],
   licenseExpiry: "",
-  emergencyContact: "",
-  address: "",
-  safetyStatus: SAFETY_STATUSES[0],
-  currentStatus: CURRENT_STATUSES[0],
+  safetyScore: 100,
+  status: CURRENT_STATUSES[0],
 };
 
 const FieldLabel = ({ children, required }) => (
@@ -59,14 +46,22 @@ const DriverForm = ({
   onCancel,
   submitLabel = "Save Driver",
 }) => {
-  const [formData, setFormData] = useState({
-    ...emptyDriver,
-    ...initialData,
+  const [formData, setFormData] = useState(() => {
+    const data = { ...emptyDriver, ...initialData };
+    // Handle formatting date for input tag if it is an ISO string/Date
+    if (data.licenseExpiry) {
+      data.licenseExpiry = new Date(data.licenseExpiry).toISOString().split("T")[0];
+    }
+    return data;
   });
   const [errors, setErrors] = useState({});
 
   const handleChange = (field) => (e) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    let val = e.target.value;
+    if (field === "safetyScore") {
+      val = val === "" ? "" : Number(val);
+    }
+    setFormData((prev) => ({ ...prev, [field]: val }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -75,21 +70,21 @@ const DriverForm = ({
   const validate = () => {
     const nextErrors = {};
     if (!formData.name.trim()) nextErrors.name = "Driver name is required.";
-    if (!formData.phone.trim())
-      nextErrors.phone = "Phone number is required.";
-    if (!formData.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      nextErrors.email = "Enter a valid email address.";
+    if (!formData.contactNumber.trim()) {
+      nextErrors.contactNumber = "Contact number is required.";
+    } else if (formData.contactNumber.replace(/[^0-9]/g, "").length < 10) {
+      nextErrors.contactNumber = "Contact number must be at least 10 digits.";
     }
     if (!formData.licenseNumber.trim())
       nextErrors.licenseNumber = "License number is required.";
     if (!formData.licenseExpiry)
       nextErrors.licenseExpiry = "License expiry date is required.";
-    if (!formData.emergencyContact.trim())
-      nextErrors.emergencyContact = "Emergency contact is required.";
-    if (!formData.address.trim())
-      nextErrors.address = "Address is required.";
+    if (
+      formData.safetyScore !== "" &&
+      (formData.safetyScore < 0 || formData.safetyScore > 100)
+    ) {
+      nextErrors.safetyScore = "Safety score must be between 0 and 100.";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -131,9 +126,9 @@ const DriverForm = ({
           )}
         </div>
 
-        {/* Phone Number */}
+        {/* Contact Number */}
         <div>
-          <FieldLabel required>Phone Number</FieldLabel>
+          <FieldLabel required>Contact Number</FieldLabel>
           <div className="relative">
             <Phone
               size={16}
@@ -141,35 +136,14 @@ const DriverForm = ({
             />
             <input
               type="tel"
-              placeholder="e.g. +91 98765 43210"
-              value={formData.phone}
-              onChange={handleChange("phone")}
-              className={`${inputBase} pl-9 ${errorClass("phone")}`}
+              placeholder="e.g. 9876543210"
+              value={formData.contactNumber}
+              onChange={handleChange("contactNumber")}
+              className={`${inputBase} pl-9 ${errorClass("contactNumber")}`}
             />
           </div>
-          {errors.phone && (
-            <p className="mt-1 text-xs text-red-500">{errors.phone}</p>
-          )}
-        </div>
-
-        {/* Email */}
-        <div>
-          <FieldLabel required>Email</FieldLabel>
-          <div className="relative">
-            <Mail
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="email"
-              placeholder="e.g. rajesh.kumar@logifleet.com"
-              value={formData.email}
-              onChange={handleChange("email")}
-              className={`${inputBase} pl-9 ${errorClass("email")}`}
-            />
-          </div>
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+          {errors.contactNumber && (
+            <p className="mt-1 text-xs text-red-500">{errors.contactNumber}</p>
           )}
         </div>
 
@@ -234,53 +208,31 @@ const DriverForm = ({
           )}
         </div>
 
-        {/* Emergency Contact */}
+        {/* Safety Score */}
         <div>
-          <FieldLabel required>Emergency Contact</FieldLabel>
-          <div className="relative">
-            <ShieldAlert
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="tel"
-              placeholder="e.g. +91 98111 22334"
-              value={formData.emergencyContact}
-              onChange={handleChange("emergencyContact")}
-              className={`${inputBase} pl-9 ${errorClass("emergencyContact")}`}
-            />
-          </div>
-          {errors.emergencyContact && (
-            <p className="mt-1 text-xs text-red-500">
-              {errors.emergencyContact}
-            </p>
-          )}
-        </div>
-
-        {/* Safety Status */}
-        <div>
-          <FieldLabel>Safety Status</FieldLabel>
+          <FieldLabel>Safety Score (0-100)</FieldLabel>
           <div className="relative">
             <ShieldCheck
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
-            <select
-              value={formData.safetyStatus}
-              onChange={handleChange("safetyStatus")}
-              className={`${inputBase} pl-9 ${errorClass("safetyStatus")} appearance-none`}
-            >
-              {SAFETY_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+            <input
+              type="number"
+              placeholder="100"
+              min="0"
+              max="100"
+              value={formData.safetyScore}
+              onChange={handleChange("safetyScore")}
+              className={`${inputBase} pl-9 ${errorClass("safetyScore")}`}
+            />
           </div>
+          {errors.safetyScore && (
+            <p className="mt-1 text-xs text-red-500">{errors.safetyScore}</p>
+          )}
         </div>
 
         {/* Current Status */}
-        <div>
+        <div className="sm:col-span-2">
           <FieldLabel>Current Status</FieldLabel>
           <div className="relative">
             <Activity
@@ -288,9 +240,9 @@ const DriverForm = ({
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
             <select
-              value={formData.currentStatus}
-              onChange={handleChange("currentStatus")}
-              className={`${inputBase} pl-9 ${errorClass("currentStatus")} appearance-none`}
+              value={formData.status}
+              onChange={handleChange("status")}
+              className={`${inputBase} pl-9 ${errorClass("status")} appearance-none`}
             >
               {CURRENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
@@ -299,27 +251,6 @@ const DriverForm = ({
               ))}
             </select>
           </div>
-        </div>
-
-        {/* Address (full width) */}
-        <div className="sm:col-span-2">
-          <FieldLabel required>Address</FieldLabel>
-          <div className="relative">
-            <MapPin
-              size={16}
-              className="pointer-events-none absolute left-3 top-3 text-gray-400"
-            />
-            <textarea
-              rows={3}
-              placeholder="e.g. 221 Sector 32, Ludhiana, Punjab"
-              value={formData.address}
-              onChange={handleChange("address")}
-              className={`${inputBase} resize-none pl-9 ${errorClass("address")}`}
-            />
-          </div>
-          {errors.address && (
-            <p className="mt-1 text-xs text-red-500">{errors.address}</p>
-          )}
         </div>
       </div>
 

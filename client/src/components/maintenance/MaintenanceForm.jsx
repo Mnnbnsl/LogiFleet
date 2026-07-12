@@ -1,3 +1,4 @@
+// src/components/maintenance/MaintenanceForm.jsx
 import { useState } from "react";
 
 const MAINTENANCE_TYPES = [
@@ -5,39 +6,36 @@ const MAINTENANCE_TYPES = [
   "Battery Replacement", "AC Repair", "Clutch Repair", "Suspension Service",
   "Wheel Alignment", "General Inspection",
 ];
-const PRIORITIES = ["Low", "Medium", "High", "Critical"];
-const WORKSHOPS = ["LogiFleet Workshop A", "North Hub Workshop", "Delhi Service Center", "Punjab Fleet Garage"];
-const TECHNICIANS = ["Rahul Singh", "Ankit Sharma", "Deepak Kumar", "Suresh Verma"];
-const STATUSES = ["Scheduled", "In Progress", "Completed", "Cancelled"];
+const STATUSES = ["Active", "Closed"];
 
 const defaultValues = {
-  vehicleName: "",
-  regNumber: "",
+  vehicleId: "",
   type: MAINTENANCE_TYPES[0],
   description: "",
-  priority: PRIORITIES[0],
-  technician: TECHNICIANS[0],
-  workshop: WORKSHOPS[0],
-  scheduledDate: "",
-  completionDate: "",
-  estimatedCost: 0,
-  actualCost: 0,
-  partsReplaced: "",
-  odometer: 0,
+  cost: "",
   status: STATUSES[0],
-  notes: "",
 };
 
-const MaintenanceForm = ({ initialData, onSubmit, onCancel, submitLabel = "Save" }) => {
-  const [formData, setFormData] = useState({ ...defaultValues, ...initialData });
+const MaintenanceForm = ({ initialData, onSubmit, onCancel, vehicles = [], submitLabel = "Save" }) => {
+  const [formData, setFormData] = useState(() => {
+    const data = { ...defaultValues, ...initialData };
+    return data;
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "cost" ? (value === "" ? "" : Number(value)) : value,
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.vehicleId) {
+      alert("Please select a vehicle.");
+      return;
+    }
     onSubmit(formData);
   };
 
@@ -47,94 +45,85 @@ const MaintenanceForm = ({ initialData, onSubmit, onCancel, submitLabel = "Save"
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
+        {/* Vehicle Selection */}
         <div>
           <label className={labelClass}>Vehicle</label>
-          <input name="vehicleName" value={formData.vehicleName} onChange={handleChange} className={inputClass} placeholder="Ashok Leyland Ecomet" required />
-        </div>
-        <div>
-          <label className={labelClass}>Registration Number</label>
-          <input name="regNumber" value={formData.regNumber} onChange={handleChange} className={inputClass} placeholder="PB10AZ2345" required />
+          <select
+            name="vehicleId"
+            value={formData.vehicleId}
+            onChange={handleChange}
+            className={inputClass}
+            required
+            disabled={!!initialData?.id} // Disable changing vehicle on edit
+          >
+            <option value="">Select a Vehicle</option>
+            {vehicles.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} ({v.regNumber})
+              </option>
+            ))}
+          </select>
         </div>
 
+        {/* Maintenance Type */}
         <div>
           <label className={labelClass}>Maintenance Type</label>
-          <select name="type" value={formData.type} onChange={handleChange} className={inputClass}>
-            {MAINTENANCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Priority</label>
-          <select name="priority" value={formData.priority} onChange={handleChange} className={inputClass}>
-            {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className={labelClass}>Description</label>
-          <input name="description" value={formData.description} onChange={handleChange} className={inputClass} placeholder="Brief description of the issue or job" />
-        </div>
-
-        <div>
-          <label className={labelClass}>Assigned Technician</label>
-          <select name="technician" value={formData.technician} onChange={handleChange} className={inputClass}>
-            {TECHNICIANS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Workshop</label>
-          <select name="workshop" value={formData.workshop} onChange={handleChange} className={inputClass}>
-            {WORKSHOPS.map((w) => <option key={w} value={w}>{w}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className={labelClass}>Scheduled Date</label>
-          <input type="date" name="scheduledDate" value={formData.scheduledDate} onChange={handleChange} className={inputClass} required />
-        </div>
-        <div>
-          <label className={labelClass}>Completion Date</label>
-          <input type="date" name="completionDate" value={formData.completionDate} onChange={handleChange} className={inputClass} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Estimated Cost (₹)</label>
-          <input type="number" name="estimatedCost" value={formData.estimatedCost} onChange={handleChange} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Actual Cost (₹)</label>
-          <input type="number" name="actualCost" value={formData.actualCost} onChange={handleChange} className={inputClass} />
-        </div>
-
-        <div>
-          <label className={labelClass}>Parts Replaced</label>
-          <input name="partsReplaced" value={formData.partsReplaced} onChange={handleChange} className={inputClass} placeholder="e.g. Oil Filter, Brake Pads" />
-        </div>
-        <div>
-          <label className={labelClass}>Current Odometer (km)</label>
-          <input type="number" name="odometer" value={formData.odometer} onChange={handleChange} className={inputClass} />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className={labelClass}>Status</label>
-          <select name="status" value={formData.status} onChange={handleChange} className={inputClass}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className={labelClass}>Notes</label>
-          <textarea
-            name="notes"
-            value={formData.notes}
+          <select
+            name="type"
+            value={formData.type}
             onChange={handleChange}
-            rows={3}
             className={inputClass}
-            placeholder="Additional remarks..."
+          >
+            {MAINTENANCE_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className={labelClass}>Description</label>
+          <input
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className={inputClass}
+            placeholder="Brief description of the job"
           />
+        </div>
+
+        {/* Cost */}
+        <div>
+          <label className={labelClass}>Cost (₹)</label>
+          <input
+            type="number"
+            name="cost"
+            value={formData.cost}
+            onChange={handleChange}
+            className={inputClass}
+            placeholder="e.g. 2500"
+            required
+          />
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className={labelClass}>Status</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className={inputClass}
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
       </div>
 
+      {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <button
           type="button"

@@ -1,290 +1,76 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RefreshCw, Download, Plus, Search, Truck } from "lucide-react";
 import VehicleTable from "./VehicleTable";
 import AddVehicle from "./AddVehicle";
 import EditVehicle from "./EditVehicle";
+import { getVehicles, createVehicle, updateVehicle, deleteVehicle } from "../../services/vehicleService";
 
-// ---------------------------------------------
-// MOCK DATA
-// ---------------------------------------------
-const initialVehicles = [
-  {
-    id: "VEH-001",
-    regNumber: "PB10AZ2345",
-    name: "Ashok Leyland Ecomet",
-    type: "Truck",
-    manufacturer: "Ashok Leyland",
-    model: "Ecomet 1615",
-    year: 2021,
-    fuelType: "Diesel",
-    capacity: "10 Ton",
-    assignedDriver: "Rajwinder Singh",
-    currentTrip: "TRP-1042",
-    mileage: 84210,
-    insuranceExpiry: "2026-11-14",
-    fitnessExpiry: "2027-02-10",
-    lastService: "2026-05-01",
-    vin: "MA3ERLF1S00123456",
-    status: "On Trip",
-    notes: "Regular highway route Ludhiana-Delhi.",
-  },
-  {
-    id: "VEH-002",
-    regNumber: "HR38AC1112",
-    name: "Tata 407 Mini",
-    type: "Mini Truck",
-    manufacturer: "Tata Motors",
-    model: "407 Gold SFC",
-    year: 2022,
-    fuelType: "Diesel",
-    capacity: "5 Ton",
-    assignedDriver: "Unassigned",
-    currentTrip: "-",
-    mileage: 42890,
-    insuranceExpiry: "2026-09-05",
-    fitnessExpiry: "2026-12-22",
-    lastService: "2026-06-18",
-    vin: "MAT448023N1B78901",
-    status: "Available",
-    notes: "Used for last-mile city delivery.",
-  },
-  {
-    id: "VEH-003",
-    regNumber: "DL1LX2209",
-    name: "Eicher Pro Container",
-    type: "Container Truck",
-    manufacturer: "Eicher",
-    model: "Pro 3015",
-    year: 2020,
-    fuelType: "Diesel",
-    capacity: "18 Ton",
-    assignedDriver: "Manpreet Kaur",
-    currentTrip: "-",
-    mileage: 112340,
-    insuranceExpiry: "2026-08-01",
-    fitnessExpiry: "2026-07-30",
-    lastService: "2026-04-02",
-    vin: "MEEP3015KL045678",
-    status: "Maintenance",
-    notes: "Brake pad replacement in progress.",
-  },
-  {
-    id: "VEH-004",
-    regNumber: "PB65B7788",
-    name: "Mahindra Bolero Pickup",
-    type: "Pickup",
-    manufacturer: "Mahindra",
-    model: "Bolero Pik-Up",
-    year: 2023,
-    fuelType: "Diesel",
-    capacity: "5 Ton",
-    assignedDriver: "Gurpreet Singh",
-    currentTrip: "TRP-1050",
-    mileage: 21870,
-    insuranceExpiry: "2027-01-19",
-    fitnessExpiry: "2027-03-11",
-    lastService: "2026-06-30",
-    vin: "MA1TF2CD9P0034512",
-    status: "On Trip",
-    notes: "Assigned to Zone-3 distribution.",
-  },
-  {
-    id: "VEH-005",
-    regNumber: "HR55CX9081",
-    name: "BharatBenz Tanker",
-    type: "Tanker",
-    manufacturer: "BharatBenz",
-    model: "3123R",
-    year: 2019,
-    fuelType: "Diesel",
-    capacity: "22 Ton",
-    assignedDriver: "Sukhwinder Singh",
-    currentTrip: "-",
-    mileage: 158720,
-    insuranceExpiry: "2026-07-25",
-    fitnessExpiry: "2026-09-14",
-    lastService: "2026-03-22",
-    vin: "MB1B3123RN0056789",
-    status: "Out of Service",
-    notes: "Engine overhaul pending approval.",
-  },
-  {
-    id: "VEH-006",
-    regNumber: "PB08G4432",
-    name: "Tata Ace CNG",
-    type: "Mini Truck",
-    manufacturer: "Tata Motors",
-    model: "Ace CNG+",
-    year: 2023,
-    fuelType: "CNG",
-    capacity: "5 Ton",
-    assignedDriver: "Unassigned",
-    currentTrip: "-",
-    mileage: 15600,
-    insuranceExpiry: "2027-04-02",
-    fitnessExpiry: "2027-05-19",
-    lastService: "2026-06-10",
-    vin: "MAT600921N2C67890",
-    status: "Available",
-    notes: "Eco-friendly fleet addition.",
-  },
-  {
-    id: "VEH-007",
-    regNumber: "DL8CAF5567",
-    name: "Ashok Leyland Trailer",
-    type: "Trailer",
-    manufacturer: "Ashok Leyland",
-    model: "U-3123 Trailer",
-    year: 2018,
-    fuelType: "Diesel",
-    capacity: "22 Ton",
-    assignedDriver: "Baljeet Singh",
-    currentTrip: "TRP-1061",
-    mileage: 201450,
-    insuranceExpiry: "2026-10-30",
-    fitnessExpiry: "2026-08-05",
-    lastService: "2026-02-14",
-    vin: "MA9U3123NL0078901",
-    status: "On Trip",
-    notes: "Long-haul interstate cargo.",
-  },
-  {
-    id: "VEH-008",
-    regNumber: "PB29K3345",
-    name: "Mahindra Furio Truck",
-    type: "Truck",
-    manufacturer: "Mahindra",
-    model: "Furio 12",
-    year: 2022,
-    fuelType: "Diesel",
-    capacity: "10 Ton",
-    assignedDriver: "Harpreet Kaur",
-    currentTrip: "-",
-    mileage: 67890,
-    insuranceExpiry: "2026-12-05",
-    fitnessExpiry: "2027-01-28",
-    lastService: "2026-06-01",
-    vin: "MA6F12KLM0089012",
-    status: "Available",
-    notes: "Backup unit for peak season.",
-  },
-  {
-    id: "VEH-009",
-    regNumber: "HR26DK7789",
-    name: "Tata Electric Pickup",
-    type: "Pickup",
-    manufacturer: "Tata Motors",
-    model: "Ace EV",
-    year: 2024,
-    fuelType: "Electric",
-    capacity: "5 Ton",
-    assignedDriver: "Simran Kaur",
-    currentTrip: "TRP-1072",
-    mileage: 8420,
-    insuranceExpiry: "2027-06-15",
-    fitnessExpiry: "2027-07-20",
-    lastService: "2026-06-25",
-    vin: "MAT700EV3N0090123",
-    status: "On Trip",
-    notes: "Pilot EV unit for city zone.",
-  },
-  {
-    id: "VEH-010",
-    regNumber: "DL4CAM2298",
-    name: "Eicher Container XL",
-    type: "Container Truck",
-    manufacturer: "Eicher",
-    model: "Pro 6031",
-    year: 2020,
-    fuelType: "Diesel",
-    capacity: "18 Ton",
-    assignedDriver: "Unassigned",
-    currentTrip: "-",
-    mileage: 134560,
-    insuranceExpiry: "2026-07-10",
-    fitnessExpiry: "2026-07-05",
-    lastService: "2026-01-30",
-    vin: "MEEP6031KL0101234",
-    status: "Maintenance",
-    notes: "Awaiting fitness re-certification.",
-  },
-  {
-    id: "VEH-011",
-    regNumber: "PB11L5567",
-    name: "BharatBenz Heavy Truck",
-    type: "Truck",
-    manufacturer: "BharatBenz",
-    model: "4223C",
-    year: 2019,
-    fuelType: "Diesel",
-    capacity: "22 Ton",
-    assignedDriver: "Jaspreet Singh",
-    currentTrip: "-",
-    mileage: 178900,
-    insuranceExpiry: "2026-09-22",
-    fitnessExpiry: "2026-11-11",
-    lastService: "2026-05-15",
-    vin: "MB4C4223CN0112345",
-    status: "Available",
-    notes: "Recently returned from service.",
-  },
-  {
-    id: "VEH-012",
-    regNumber: "HR51M6678",
-    name: "Mahindra CNG Truck",
-    type: "Truck",
-    manufacturer: "Mahindra",
-    model: "Blazo CNG",
-    year: 2023,
-    fuelType: "CNG",
-    capacity: "10 Ton",
-    assignedDriver: "Amrit Pal",
-    currentTrip: "TRP-1088",
-    mileage: 29870,
-    insuranceExpiry: "2027-02-28",
-    fitnessExpiry: "2027-04-09",
-    lastService: "2026-06-20",
-    vin: "MABZCNG4N0123456",
-    status: "On Trip",
-    notes: "Assigned to dairy cold-chain route.",
-  },
-  {
-    id: "VEH-013",
-    regNumber: "PB03N8890",
-    name: "Tata Signa Tanker",
-    type: "Tanker",
-    manufacturer: "Tata Motors",
-    model: "Signa 4225",
-    year: 2021,
-    fuelType: "Diesel",
-    capacity: "18 Ton",
-    assignedDriver: "Unassigned",
-    currentTrip: "-",
-    mileage: 95430,
-    insuranceExpiry: "2026-08-19",
-    fitnessExpiry: "2026-10-02",
-    lastService: "2026-04-28",
-    vin: "MAT4225SN0134567",
-    status: "Available",
-    notes: "Fuel transport, weekly route.",
-  },
-];
-
-const VEHICLE_TYPES = ["Truck", "Mini Truck", "Trailer", "Pickup", "Container Truck", "Tanker"];
+const VEHICLE_TYPES = ["Truck", "Mini Truck", "Trailer", "Pickup", "Container Truck", "Tanker", "Cargo Van", "High Roof Van", "Refrigerator Truck", "Box Truck", "Semi-Truck", "Flatbed Truck"];
 const STATUSES = ["Available", "On Trip", "Maintenance", "Out of Service"];
 const PAGE_SIZE = 8;
 
+const mapStatusToFrontend = (status) => {
+  const map = {
+    AVAILABLE: "Available",
+    ON_TRIP: "On Trip",
+    IN_SHOP: "Maintenance",
+    RETIRED: "Out of Service"
+  };
+  return map[status] || status;
+};
+
+const mapStatusToBackend = (status) => {
+  const map = {
+    "Available": "AVAILABLE",
+    "On Trip": "ON_TRIP",
+    "Maintenance": "IN_SHOP",
+    "Out of Service": "RETIRED"
+  };
+  return map[status] || status;
+};
+
 const VehiclePageContent = () => {
-  const [vehicles, setVehicles] = useState(initialVehicles);
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
+  const [vehicles, setVehicles] = useState([]);
+  const [search, setSearch] = useState(urlSearch);
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setPage(1);
+  }, [urlSearch]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+  const loadVehicles = async () => {
+    setLoading(true);
+    try {
+      const res = await getVehicles();
+      const dbVehicles = res.data?.vehicles || [];
+      const mapped = dbVehicles.map(v => ({
+        ...v,
+        status: mapStatusToFrontend(v.status),
+        assignedDriver: v.trips?.[0]?.driver?.name || "Unassigned",
+        currentTrip: v.trips?.[0]?.id ? `TRP-${v.trips[0].id.substring(0, 8)}` : "-",
+      }));
+      setVehicles(mapped);
+    } catch (err) {
+      console.error("Failed to load vehicles:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVehicles();
+  }, []);
 
   // ---------------------------------------------
   // KPI CALCULATIONS
@@ -324,20 +110,18 @@ const VehiclePageContent = () => {
   // HANDLERS
   // ---------------------------------------------
   const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 700);
+    loadVehicles();
   };
 
   const handleExportCSV = () => {
     const headers = [
       "Vehicle ID", "Registration Number", "Vehicle Name", "Vehicle Type",
-      "Manufacturer", "Fuel Type", "Capacity", "Assigned Driver",
-      "Current Trip", "Insurance Expiry", "Fitness Expiry", "Status",
+      "Model", "Max Load Capacity (kg)", "Odometer (km)", "Acquisition Cost", "Region", "Assigned Driver",
+      "Current Trip", "Status",
     ];
     const rows = filteredVehicles.map((v) => [
-      v.id, v.regNumber, v.name, v.type, v.manufacturer, v.fuelType,
-      v.capacity, v.assignedDriver, v.currentTrip, v.insuranceExpiry,
-      v.fitnessExpiry, v.status,
+      v.id, v.regNumber, v.name, v.type, v.model, v.maxLoadCapacity,
+      v.odometer, v.acquisitionCost, v.region || "", v.assignedDriver, v.currentTrip, v.status,
     ]);
     const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -349,22 +133,63 @@ const VehiclePageContent = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleAddVehicle = (newVehicle) => {
-    const nextId = `VEH-${String(vehicles.length + 1).padStart(3, "0")}`;
-    setVehicles((prev) => [...prev, { ...newVehicle, id: nextId, currentTrip: "-" }]);
-    setShowAddModal(false);
+  const handleAddVehicle = async (newVehicle) => {
+    try {
+      const payload = {
+        regNumber: newVehicle.regNumber,
+        name: newVehicle.name,
+        type: newVehicle.type,
+        model: newVehicle.model,
+        maxLoadCapacity: Number(newVehicle.maxLoadCapacity),
+        acquisitionCost: Number(newVehicle.acquisitionCost),
+        region: newVehicle.region,
+        status: mapStatusToBackend(newVehicle.status)
+      };
+      await createVehicle(payload);
+      setShowAddModal(false);
+      loadVehicles();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to add vehicle");
+    }
   };
 
-  const handleUpdateVehicle = (updatedVehicle) => {
-    setVehicles((prev) =>
-      prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
-    );
-    setShowEditModal(false);
-    setSelectedVehicle(null);
+  const handleUpdateVehicle = async (updatedVehicle) => {
+    try {
+      const statusBackend = mapStatusToBackend(updatedVehicle.status);
+      const payload = {
+        regNumber: updatedVehicle.regNumber,
+        name: updatedVehicle.name,
+        type: updatedVehicle.type,
+        model: updatedVehicle.model,
+        maxLoadCapacity: Number(updatedVehicle.maxLoadCapacity),
+        acquisitionCost: Number(updatedVehicle.acquisitionCost),
+        region: updatedVehicle.region,
+        odometer: Number(updatedVehicle.odometer)
+      };
+      
+      // The backend update schema only allows direct status update if it is AVAILABLE.
+      // Other status transitions happen during trip dispatching or maintenance logging.
+      if (statusBackend === "AVAILABLE") {
+        payload.status = "AVAILABLE";
+      }
+
+      await updateVehicle(selectedVehicle.id, payload);
+      setShowEditModal(false);
+      setSelectedVehicle(null);
+      loadVehicles();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update vehicle");
+    }
   };
 
-  const handleDeleteVehicle = (id) => {
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
+  const handleDeleteVehicle = async (id) => {
+    if (!confirm("Are you sure you want to retire (soft delete) this vehicle?")) return;
+    try {
+      await deleteVehicle(id);
+      loadVehicles();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to delete vehicle");
+    }
   };
 
   const handleEditClick = (vehicle) => {
@@ -410,6 +235,14 @@ const VehiclePageContent = () => {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
+              setSearchParams((prev) => {
+                if (e.target.value) {
+                  prev.set('search', e.target.value);
+                } else {
+                  prev.delete('search');
+                }
+                return prev;
+              });
               setPage(1);
             }}
             className="w-full bg-[#1F2937] border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5B301]/50"

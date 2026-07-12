@@ -1,319 +1,96 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RefreshCw, Download, Plus, Search, Wrench } from "lucide-react";
 import MaintenanceTable from "./MaintenanceTable";
 import AddMaintenance from "./AddMaintenance";
 import EditMaintenance from "./EditMaintenance";
-
-// ---------------------------------------------
-// MOCK DATA
-// ---------------------------------------------
-const initialJobs = [
-  {
-    id: "MNT-001",
-    vehicleName: "Ashok Leyland Ecomet",
-    regNumber: "PB10AZ2345",
-    type: "Oil Change",
-    description: "Routine engine oil and filter change.",
-    priority: "Low",
-    technician: "Rahul Singh",
-    workshop: "LogiFleet Workshop A",
-    scheduledDate: "2026-07-08",
-    completionDate: "2026-07-08",
-    estimatedCost: 2500,
-    actualCost: 2450,
-    partsReplaced: "Oil Filter, Engine Oil",
-    odometer: 84210,
-    status: "Completed",
-    notes: "No issues found during inspection.",
-  },
-  {
-    id: "MNT-002",
-    vehicleName: "Eicher Pro Container",
-    regNumber: "DL1LX2209",
-    type: "Brake Inspection",
-    description: "Brake pad wear check and replacement.",
-    priority: "High",
-    technician: "Ankit Sharma",
-    workshop: "North Hub Workshop",
-    scheduledDate: "2026-07-05",
-    completionDate: "",
-    estimatedCost: 8500,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 112340,
-    status: "In Progress",
-    notes: "Front brake pads worn below safety threshold.",
-  },
-  {
-    id: "MNT-003",
-    vehicleName: "Tata Signa Tanker",
-    regNumber: "PB03N8890",
-    type: "General Inspection",
-    description: "Quarterly fitness and safety inspection.",
-    priority: "Medium",
-    technician: "Deepak Kumar",
-    workshop: "Punjab Fleet Garage",
-    scheduledDate: "2026-07-18",
-    completionDate: "",
-    estimatedCost: 1200,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 95430,
-    status: "Scheduled",
-    notes: "Standard quarterly checkup.",
-  },
-  {
-    id: "MNT-004",
-    vehicleName: "BharatBenz Tanker",
-    regNumber: "HR55CX9081",
-    type: "Engine Service",
-    description: "Full engine overhaul due to overheating.",
-    priority: "Critical",
-    technician: "Suresh Verma",
-    workshop: "Delhi Service Center",
-    scheduledDate: "2026-06-28",
-    completionDate: "",
-    estimatedCost: 45000,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 158720,
-    status: "In Progress",
-    notes: "Engine overhaul pending parts approval.",
-  },
-  {
-    id: "MNT-005",
-    vehicleName: "Ashok Leyland Trailer",
-    regNumber: "DL8CAF5567",
-    type: "Tyre Replacement",
-    description: "Replace worn rear tyres.",
-    priority: "High",
-    technician: "Rahul Singh",
-    workshop: "LogiFleet Workshop A",
-    scheduledDate: "2026-07-02",
-    completionDate: "2026-07-03",
-    estimatedCost: 22000,
-    actualCost: 21500,
-    partsReplaced: "4x Rear Tyres",
-    odometer: 201450,
-    status: "Completed",
-    notes: "Tyres replaced with branded set.",
-  },
-  {
-    id: "MNT-006",
-    vehicleName: "Eicher Container XL",
-    regNumber: "DL4CAM2298",
-    type: "AC Repair",
-    description: "Cabin AC not cooling properly.",
-    priority: "Medium",
-    technician: "Ankit Sharma",
-    workshop: "North Hub Workshop",
-    scheduledDate: "2026-07-10",
-    completionDate: "",
-    estimatedCost: 4500,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 134560,
-    status: "Scheduled",
-    notes: "AC compressor suspected faulty.",
-  },
-  {
-    id: "MNT-007",
-    vehicleName: "Mahindra Furio Truck",
-    regNumber: "PB29K3345",
-    type: "Battery Replacement",
-    description: "Battery not holding charge.",
-    priority: "Medium",
-    technician: "Deepak Kumar",
-    workshop: "Punjab Fleet Garage",
-    scheduledDate: "2026-06-25",
-    completionDate: "2026-06-25",
-    estimatedCost: 6500,
-    actualCost: 6500,
-    partsReplaced: "12V Battery",
-    odometer: 67890,
-    status: "Completed",
-    notes: "Old battery disposed as per policy.",
-  },
-  {
-    id: "MNT-008",
-    vehicleName: "Tata 407 Mini",
-    regNumber: "HR38AC1112",
-    type: "Clutch Repair",
-    description: "Clutch slipping under load.",
-    priority: "High",
-    technician: "Suresh Verma",
-    workshop: "Delhi Service Center",
-    scheduledDate: "2026-07-14",
-    completionDate: "",
-    estimatedCost: 12000,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 42890,
-    status: "Scheduled",
-    notes: "Driver reported slipping since last week.",
-  },
-  {
-    id: "MNT-009",
-    vehicleName: "Mahindra Bolero Pickup",
-    regNumber: "PB65B7788",
-    type: "Suspension Service",
-    description: "Front suspension noise inspection.",
-    priority: "Low",
-    technician: "Rahul Singh",
-    workshop: "LogiFleet Workshop A",
-    scheduledDate: "2026-07-01",
-    completionDate: "2026-07-01",
-    estimatedCost: 3200,
-    actualCost: 3000,
-    partsReplaced: "Bush Kit",
-    odometer: 21870,
-    status: "Completed",
-    notes: "Bush kit replaced, noise resolved.",
-  },
-  {
-    id: "MNT-010",
-    vehicleName: "BharatBenz Heavy Truck",
-    regNumber: "PB11L5567",
-    type: "Wheel Alignment",
-    description: "Uneven tyre wear reported.",
-    priority: "Medium",
-    technician: "Ankit Sharma",
-    workshop: "North Hub Workshop",
-    scheduledDate: "2026-07-20",
-    completionDate: "",
-    estimatedCost: 1800,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 178900,
-    status: "Scheduled",
-    notes: "Recommended after tyre inspection.",
-  },
-  {
-    id: "MNT-011",
-    vehicleName: "Mahindra CNG Truck",
-    regNumber: "HR51M6678",
-    type: "General Inspection",
-    description: "CNG cylinder safety check.",
-    priority: "Critical",
-    technician: "Deepak Kumar",
-    workshop: "Punjab Fleet Garage",
-    scheduledDate: "2026-06-30",
-    completionDate: "2026-07-01",
-    estimatedCost: 2000,
-    actualCost: 2000,
-    partsReplaced: "",
-    odometer: 29870,
-    status: "Completed",
-    notes: "Cylinder certified safe for another year.",
-  },
-  {
-    id: "MNT-012",
-    vehicleName: "Tata Ace CNG",
-    regNumber: "PB08G4432",
-    type: "Oil Change",
-    description: "Scheduled oil change interval reached.",
-    priority: "Low",
-    technician: "Suresh Verma",
-    workshop: "Delhi Service Center",
-    scheduledDate: "2026-07-22",
-    completionDate: "",
-    estimatedCost: 1800,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 15600,
-    status: "Scheduled",
-    notes: "Routine service, no issues reported.",
-  },
-  {
-    id: "MNT-013",
-    vehicleName: "Tata Electric Pickup",
-    regNumber: "HR26DK7789",
-    type: "General Inspection",
-    description: "EV battery health diagnostic.",
-    priority: "Medium",
-    technician: "Rahul Singh",
-    workshop: "LogiFleet Workshop A",
-    scheduledDate: "2026-07-15",
-    completionDate: "",
-    estimatedCost: 3000,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 8420,
-    status: "Cancelled",
-    notes: "Cancelled - vehicle sent to OEM service instead.",
-  },
-  {
-    id: "MNT-014",
-    vehicleName: "Ashok Leyland Ecomet",
-    regNumber: "PB10AZ2345",
-    type: "Tyre Replacement",
-    description: "Spare tyre replacement after puncture.",
-    priority: "Low",
-    technician: "Ankit Sharma",
-    workshop: "North Hub Workshop",
-    scheduledDate: "2026-06-20",
-    completionDate: "2026-06-20",
-    estimatedCost: 5000,
-    actualCost: 4800,
-    partsReplaced: "1x Tyre",
-    odometer: 83900,
-    status: "Completed",
-    notes: "Puncture repaired, spare replaced.",
-  },
-  {
-    id: "MNT-015",
-    vehicleName: "Eicher Pro Container",
-    regNumber: "DL1LX2209",
-    type: "AC Repair",
-    description: "Cabin AC compressor replacement.",
-    priority: "High",
-    technician: "Deepak Kumar",
-    workshop: "Punjab Fleet Garage",
-    scheduledDate: "2026-07-25",
-    completionDate: "",
-    estimatedCost: 9500,
-    actualCost: 0,
-    partsReplaced: "",
-    odometer: 112900,
-    status: "Scheduled",
-    notes: "Compressor ordered, awaiting delivery.",
-  },
-];
+import { getMaintenanceLogs, createMaintenance, closeMaintenance } from "../../services/maintenanceService";
+import { getVehicles } from "../../services/vehicleService";
 
 const MAINTENANCE_TYPES = [
   "Oil Change", "Engine Service", "Brake Inspection", "Tyre Replacement",
   "Battery Replacement", "AC Repair", "Clutch Repair", "Suspension Service",
   "Wheel Alignment", "General Inspection",
 ];
-const STATUSES = ["Scheduled", "In Progress", "Completed", "Cancelled"];
+const STATUSES = ["Active", "Closed"];
 const PAGE_SIZE = 8;
 
+const mapStatusToFrontend = (status) => {
+  const map = {
+    ACTIVE: "In Progress",
+    CLOSED: "Completed"
+  };
+  return map[status] || status;
+};
+
 const MaintenancePageContent = () => {
-  const [jobs, setJobs] = useState(initialJobs);
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
+  const [jobs, setJobs] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [search, setSearch] = useState(urlSearch);
   const [vehicleFilter, setVehicleFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setPage(1);
+  }, [urlSearch]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
-  const vehicleOptions = useMemo(
-    () => ["All", ...new Set(initialJobs.map((j) => j.vehicleName))],
-    []
-  );
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [logsRes, vehiclesRes] = await Promise.all([
+        getMaintenanceLogs(),
+        getVehicles(),
+      ]);
+
+      const dbLogs = logsRes.data?.logs || [];
+      const mappedLogs = dbLogs.map(log => ({
+        id: log.id,
+        vehicleId: log.vehicleId,
+        vehicleName: log.vehicle?.name || "Unknown Vehicle",
+        regNumber: log.vehicle?.regNumber || "",
+        type: log.type,
+        description: log.description,
+        cost: log.cost,
+        status: mapStatusToFrontend(log.status),
+        createdAt: log.createdAt,
+        closedAt: log.closedAt,
+      }));
+
+      setJobs(mappedLogs);
+      setVehicles(vehiclesRes.data?.vehicles || []);
+    } catch (err) {
+      console.error("Failed to fetch maintenance data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const vehicleOptions = useMemo(() => {
+    return ["All", ...new Set(jobs.map((j) => j.vehicleName))];
+  }, [jobs]);
 
   // ---------------------------------------------
   // KPI CALCULATIONS
   // ---------------------------------------------
   const kpis = useMemo(() => {
-    const now = new Date("2026-07-12");
+    const now = new Date();
     const completedThisMonth = jobs.filter((j) => {
-      if (j.status !== "Completed" || !j.completionDate) return false;
-      const d = new Date(j.completionDate);
+      if (j.status !== "Completed" || !j.closedAt) return false;
+      const d = new Date(j.closedAt);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
 
@@ -321,7 +98,7 @@ const MaintenancePageContent = () => {
       total: jobs.length,
       inWorkshop: jobs.filter((j) => j.status === "In Progress").length,
       completedThisMonth,
-      upcoming: jobs.filter((j) => j.status === "Scheduled").length,
+      upcoming: jobs.filter((j) => j.status === "Scheduled" || j.status === "In Progress").length,
     };
   }, [jobs]);
 
@@ -333,7 +110,7 @@ const MaintenancePageContent = () => {
       const matchesSearch =
         j.vehicleName.toLowerCase().includes(search.toLowerCase()) ||
         j.regNumber.toLowerCase().includes(search.toLowerCase()) ||
-        j.technician.toLowerCase().includes(search.toLowerCase());
+        (j.description && j.description.toLowerCase().includes(search.toLowerCase()));
       const matchesVehicle = vehicleFilter === "All" || j.vehicleName === vehicleFilter;
       const matchesType = typeFilter === "All" || j.type === typeFilter;
       const matchesStatus = statusFilter === "All" || j.status === statusFilter;
@@ -352,20 +129,18 @@ const MaintenancePageContent = () => {
   // HANDLERS
   // ---------------------------------------------
   const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 700);
+    loadData();
   };
 
   const handleExportCSV = () => {
     const headers = [
-      "Maintenance ID", "Vehicle", "Registration Number", "Type", "Technician",
-      "Scheduled Date", "Completion Date", "Estimated Cost", "Actual Cost",
-      "Priority", "Status",
+      "Maintenance ID", "Vehicle", "Registration Number", "Type", "Description",
+      "Cost", "Date Created", "Date Closed", "Status",
     ];
     const rows = filteredJobs.map((j) => [
-      j.id, j.vehicleName, j.regNumber, j.type, j.technician,
-      j.scheduledDate, j.completionDate, j.estimatedCost, j.actualCost,
-      j.priority, j.status,
+      j.id, j.vehicleName, j.regNumber, j.type, j.description || "",
+      j.cost, j.createdAt ? new Date(j.createdAt).toLocaleDateString() : "",
+      j.closedAt ? new Date(j.closedAt).toLocaleDateString() : "", j.status,
     ]);
     const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -377,20 +152,37 @@ const MaintenancePageContent = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleAddJob = (newJob) => {
-    const nextId = `MNT-${String(jobs.length + 1).padStart(3, "0")}`;
-    setJobs((prev) => [...prev, { ...newJob, id: nextId }]);
-    setShowAddModal(false);
+  const handleAddJob = async (newJob) => {
+    try {
+      const payload = {
+        vehicleId: newJob.vehicleId,
+        type: newJob.type,
+        description: newJob.description,
+        cost: Number(newJob.cost),
+      };
+      await createMaintenance(payload);
+      setShowAddModal(false);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to schedule maintenance");
+    }
   };
 
-  const handleUpdateJob = (updatedJob) => {
-    setJobs((prev) => prev.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
-    setShowEditModal(false);
-    setSelectedJob(null);
+  const handleUpdateJob = async (updatedJob) => {
+    try {
+      if (updatedJob.status === "Closed" || updatedJob.status === "CLOSED") {
+        await closeMaintenance(updatedJob.id);
+      }
+      setShowEditModal(false);
+      setSelectedJob(null);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update maintenance job");
+    }
   };
 
   const handleDeleteJob = (id) => {
-    setJobs((prev) => prev.filter((j) => j.id !== id));
+    alert("Maintenance logs cannot be deleted to preserve financial audit trails. You can close active jobs instead.");
   };
 
   const handleEditClick = (job) => {
@@ -461,6 +253,14 @@ const MaintenancePageContent = () => {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
+              setSearchParams((prev) => {
+                if (e.target.value) {
+                  prev.set('search', e.target.value);
+                } else {
+                  prev.delete('search');
+                }
+                return prev;
+              });
               setPage(1);
             }}
             className="w-full bg-[#1F2937] border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5B301]/50"
@@ -503,9 +303,8 @@ const MaintenancePageContent = () => {
           className="bg-[#1F2937] border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#F5B301]/50"
         >
           <option value="All">All Statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
         </select>
 
         <button
@@ -549,6 +348,7 @@ const MaintenancePageContent = () => {
         <AddMaintenance
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddJob}
+          vehicles={vehicles}
         />
       )}
 
@@ -560,6 +360,7 @@ const MaintenancePageContent = () => {
             setSelectedJob(null);
           }}
           onUpdate={handleUpdateJob}
+          vehicles={vehicles}
         />
       )}
     </div>
